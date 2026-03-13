@@ -72,7 +72,6 @@ export const createStreamableRouter = ({
 
     const connectionEvent = await auditor.createEvent({
       eventId: 'connection',
-      severityLevel: 'medium',
       request: req,
       meta: { transport: 'streamable', actionType: 'established' },
     });
@@ -114,7 +113,8 @@ export const createStreamableRouter = ({
             request: req,
             meta: { transport: 'streamable', actionType: 'closed' },
           })
-          .then(e => e.success());
+          .then(e => e.success())
+          .catch(() => {});
       });
     } catch (error) {
       const err = toError(error);
