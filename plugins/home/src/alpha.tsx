@@ -47,6 +47,7 @@ import {
   HomePageLayoutBlueprint,
   HomePageWidgetBlueprint,
   type HomePageLayoutProps,
+  HomePageCardWidgetBlueprint,
 } from '@backstage/plugin-home-react/alpha';
 
 const rootRouteRef = createRouteRef();
@@ -130,14 +131,14 @@ const homeNavItem = NavItemBlueprint.make({
   },
 });
 
-const homePageToolkitWidget = HomePageWidgetBlueprint.make({
+const homePageToolkitWidget = HomePageCardWidgetBlueprint.make({
   name: 'toolkit',
   params: {
     name: 'HomePageToolkit',
     title: 'Toolkit',
     components: () =>
       import('./homePageComponents/Toolkit').then(m => ({
-        Content: m.Content,
+        Content: (props: any) => <m.Content {...props} />,
         ContextProvider: m.ContextProvider,
       })),
     componentProps: {
@@ -152,7 +153,7 @@ const homePageToolkitWidget = HomePageWidgetBlueprint.make({
   },
 });
 
-const homePageStarredEntitiesWidget = HomePageWidgetBlueprint.make({
+const homePageStarredEntitiesWidget = HomePageCardWidgetBlueprint.make({
   name: 'starred-entities',
   params: {
     name: 'HomePageStarredEntities',
@@ -164,7 +165,7 @@ const homePageStarredEntitiesWidget = HomePageWidgetBlueprint.make({
   },
 });
 
-const homePageRandomJokeWidget = HomePageWidgetBlueprint.make({
+const homePageRandomJokeWidget = HomePageCardWidgetBlueprint.make({
   name: 'random-joke',
   params: {
     name: 'HomePageRandomJoke',
