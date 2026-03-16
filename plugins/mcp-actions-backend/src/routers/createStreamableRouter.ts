@@ -94,10 +94,10 @@ export const createStreamableRouter = ({
         tracing.context.active(),
         req.headers,
       );
-      await connectionEvent.success();
       await tracing.context.with(ctx, () =>
         transport.handleRequest(req, res, req.body),
       );
+      await connectionEvent.success();
 
       res.on('close', () => {
         transport.close();
