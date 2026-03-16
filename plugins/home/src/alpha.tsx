@@ -261,7 +261,6 @@ export default createFrontendPlugin({
   info: { packageJson: () => import('../package.json') },
   extensions: [
     homePage,
-    // homeNavItem,
     visitsApi,
     visitListenerAppRootElement,
     homePageToolkitWidget,
