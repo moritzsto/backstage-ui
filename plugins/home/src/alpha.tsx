@@ -36,7 +36,6 @@ import {
   errorApiRef,
   ApiBlueprint,
   ExtensionBoundary,
-  NavItemBlueprint,
 } from '@backstage/frontend-plugin-api';
 import { VisitListener } from './components/';
 import { visitsApiRef, VisitsStorageApi, VisitsWebStorageApi } from './api';
