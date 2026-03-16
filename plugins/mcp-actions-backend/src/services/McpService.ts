@@ -284,6 +284,13 @@ export class McpService {
             if (isError) {
               span.setAttribute('error.type', 'tool_error');
               span.setStatus({ code: 'error', message: 'tool_error' });
+              const errorDescription =
+                (result as { errorDescription?: string })?.errorDescription ??
+                `Tool "${params.name}" reported isError=true`;
+
+              await auditorEvent.fail({
+                error: new Error(errorDescription),
+              });
             }
 
             await auditorEvent.success();
