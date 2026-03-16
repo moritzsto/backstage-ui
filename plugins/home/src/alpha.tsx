@@ -66,7 +66,7 @@ const homePage = PageBlueprint.makeWithOverrides({
       path: '/home',
       noHeader: true,
       routeRef: rootRouteRef,
-      // icon: HomeIcon,
+      icon: <HomeIcon />,
       title: 'Home',
       loader: async () => {
         const LazyDefaultLayout = reactLazy(() =>
