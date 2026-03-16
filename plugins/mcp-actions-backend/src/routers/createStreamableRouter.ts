@@ -90,6 +90,8 @@ export const createStreamableRouter = ({
       });
 
       await server.connect(transport);
+      await connectionEvent.success();
+
       const ctx = tracing.propagation.extract(
         tracing.context.active(),
         req.headers,
@@ -97,7 +99,6 @@ export const createStreamableRouter = ({
       await tracing.context.with(ctx, () =>
         transport.handleRequest(req, res, req.body),
       );
-      await connectionEvent.success();
 
       res.on('close', () => {
         transport.close();
