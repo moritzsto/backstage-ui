@@ -123,7 +123,7 @@ const customHomePageModule = createFrontendModule({
                   <HeaderWorldClock clockConfigs={clockConfigs} />
                 </Header>
                 <Content>
-                  <CustomHomepageGrid>
+                  <CustomHomepageGrid preventDuplicateWidgets>
                     {widgets.map((widget, index) => (
                       <Fragment key={widget.name ?? index}>
                         {widget.component}

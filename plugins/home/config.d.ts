@@ -64,16 +64,5 @@ export interface Config {
         value: string | number;
       }>;
     };
-    /**
-     * Custom homepage grid configuration
-     * @visibility frontend
-     */
-    customHomepage?: {
-      /**
-       * Whether to prevent duplicate widgets from being added to the homepage; default `false`
-       * @visibility frontend
-       */
-      preventDuplicateWidgets?: boolean;
-    };
   };
 }

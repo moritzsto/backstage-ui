@@ -497,50 +497,9 @@ home:
       - field:
         operator:
         value:
-  customHomepage:
-    preventDuplicateWidgets: true
 ```
 
 `filterBy` configs that are not defined in the above format will be ignored.
-
-### Custom Homepage Configuration
-
-The custom homepage grid supports additional configuration options:
-
-```yaml
-home:
-  customHomepage:
-    # Whether to prevent duplicate widgets from being added to the homepage
-    # This can be overridden by the preventDuplicateWidgets prop on CustomHomepageGrid
-    # Default: false
-    preventDuplicateWidgets: true
-```
-
-#### Configuration Precedence
-
-The `preventDuplicateWidgets` setting follows this precedence order (highest to lowest):
-
-1. **Prop override**: `preventDuplicateWidgets` prop on `CustomHomepageGrid` component
-2. **App configuration**: `home.customHomepage.preventDuplicateWidgets` in `app-config.yaml`
-3. **Default**: `false`
-
-#### Usage Examples
-
-**App-level configuration (app-config.yaml):**
-
-```yaml
-home:
-  customHomepage:
-    preventDuplicateWidgets: true
-```
-
-**Component-level override:**
-
-```tsx
-<CustomHomepageGrid preventDuplicateWidgets={false}>
-  {/* Widgets */}
-</CustomHomepageGrid>
-```
 
 In order to validate the config you can use `backstage/cli config:check`
 
