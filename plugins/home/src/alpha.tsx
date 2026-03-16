@@ -28,7 +28,6 @@ import { lazy as reactLazy } from 'react';
 import {
   createExtensionInput,
   PageBlueprint,
-  NavItemBlueprint,
   createFrontendPlugin,
   createRouteRef,
   AppRootElementBlueprint,
@@ -37,15 +36,16 @@ import {
   errorApiRef,
   ApiBlueprint,
   ExtensionBoundary,
+  NavItemBlueprint,
 } from '@backstage/frontend-plugin-api';
 import { VisitListener } from './components/';
 import { visitsApiRef, VisitsStorageApi, VisitsWebStorageApi } from './api';
 import HomeIcon from '@material-ui/icons/Home';
+import {} from '@backstage/core-components';
 import {
   homePageWidgetDataRef,
   homePageLayoutComponentDataRef,
   HomePageLayoutBlueprint,
-  HomePageWidgetBlueprint,
   type HomePageLayoutProps,
   HomePageCardWidgetBlueprint,
 } from '@backstage/plugin-home-react/alpha';
@@ -66,6 +66,8 @@ const homePage = PageBlueprint.makeWithOverrides({
       path: '/home',
       noHeader: true,
       routeRef: rootRouteRef,
+      // icon: HomeIcon,
+      title: 'Home',
       loader: async () => {
         const LazyDefaultLayout = reactLazy(() =>
           import('./alpha/DefaultHomePageLayout').then(m => ({
@@ -121,14 +123,6 @@ const visitsApi = ApiBlueprint.make({
         return VisitsWebStorageApi.create({ identityApi, errorApi });
       },
     }),
-});
-
-const homeNavItem = NavItemBlueprint.make({
-  params: {
-    title: 'Home',
-    routeRef: rootRouteRef,
-    icon: HomeIcon,
-  },
 });
 
 const homePageToolkitWidget = HomePageCardWidgetBlueprint.make({
@@ -199,6 +193,60 @@ const homePageRandomJokeWidget = HomePageCardWidgetBlueprint.make({
   },
 });
 
+const homePageTopVisitedWidget = HomePageCardWidgetBlueprint.make({
+  name: 'top-visited',
+  disabled: true,
+  params: {
+    name: 'HomePageTopVisited',
+    title: 'Top Visited',
+    components: () =>
+      import('./homePageComponents/VisitedByType/TopVisited').then(m => ({
+        Content: m.Content,
+        Actions: m.Actions,
+        ContextProvider: m.ContextProvider,
+      })),
+  },
+});
+
+const homePageRecentlyVisitedWidget = HomePageCardWidgetBlueprint.make({
+  name: 'recently-visited',
+  disabled: true,
+  params: {
+    name: 'HomePageRecentlyVisited',
+    title: 'Recently Visited',
+    components: () =>
+      import('./homePageComponents/VisitedByType/RecentlyVisited').then(m => ({
+        Content: m.Content,
+        Actions: m.Actions,
+        ContextProvider: m.ContextProvider,
+      })),
+  },
+});
+
+const homePageFeaturedDocsWidget = HomePageCardWidgetBlueprint.make({
+  name: 'featured-docs',
+  params: {
+    name: 'FeaturedDocsCard',
+    title: 'Featured Docs',
+    components: () =>
+      import('./homePageComponents/FeaturedDocsCard').then(m => ({
+        Content: m.Content,
+      })),
+  },
+});
+
+const homePageQuickStartWidget = HomePageCardWidgetBlueprint.make({
+  name: 'quick-start',
+  params: {
+    name: 'QuickStartCard',
+    title: 'Quick Start',
+    components: () =>
+      import('./homePageComponents/QuickStart').then(m => ({
+        Content: m.Content,
+      })),
+  },
+});
+
 /**
  * Home plugin for the new frontend system.
  *
@@ -214,12 +262,16 @@ export default createFrontendPlugin({
   info: { packageJson: () => import('../package.json') },
   extensions: [
     homePage,
-    homeNavItem,
+    // homeNavItem,
     visitsApi,
     visitListenerAppRootElement,
     homePageToolkitWidget,
     homePageStarredEntitiesWidget,
     homePageRandomJokeWidget,
+    homePageTopVisitedWidget,
+    homePageRecentlyVisitedWidget,
+    homePageFeaturedDocsWidget,
+    homePageQuickStartWidget,
   ],
   routes: {
     root: rootRouteRef,
