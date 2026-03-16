@@ -144,7 +144,6 @@ The `CustomHomepageGrid` supports preventing duplicate widgets from being added 
 </CustomHomepageGrid>
 ```
 
-
 ## Contributing
 
 ### Homepage Components

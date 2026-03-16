@@ -384,6 +384,7 @@ export const CustomHomepageGrid = (props: CustomHomepageGridProps) => {
         open={addWidgetDialogOpen}
         onClose={() => setAddWidgetDialogOpen(false)}
       >
+        {/* Only mount when open so the list does not update (e.g. remove the added widget) before the modal closes */}
         {addWidgetDialogOpen && (
           <AddWidgetDialog
             widgets={getAvailableWidgets()}
