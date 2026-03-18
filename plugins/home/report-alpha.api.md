@@ -10,10 +10,9 @@ import { ConfigurableExtensionDataRef } from '@backstage/frontend-plugin-api';
 import { ExtensionBlueprintParams } from '@backstage/frontend-plugin-api';
 import { ExtensionDataRef } from '@backstage/frontend-plugin-api';
 import { ExtensionInput } from '@backstage/frontend-plugin-api';
+import { HomePageCardWidgetBlueprintParams } from '@backstage/plugin-home-react/alpha';
 import { HomePageLayoutProps } from '@backstage/plugin-home-react/alpha';
-import { HomePageWidgetBlueprintParams } from '@backstage/plugin-home-react/alpha';
 import { HomePageWidgetData } from '@backstage/plugin-home-react/alpha';
-import { IconComponent } from '@backstage/frontend-plugin-api';
 import { IconElement } from '@backstage/frontend-plugin-api';
 import { JSX as JSX_2 } from 'react';
 import { OverridableExtensionDefinition } from '@backstage/frontend-plugin-api';
@@ -54,6 +53,25 @@ const _default: OverridableFrontendPlugin<
         element: JSX.Element;
       };
     }>;
+    'home-page-widget:home/featured-docs': OverridableExtensionDefinition<{
+      config: {
+        filter: Record<string, string | string[]>;
+        responseLimit: number | undefined;
+        linkDestination: string | undefined;
+        subLinkText: string | undefined;
+      };
+      configInput: {
+        filter: Record<string, string | string[]>;
+        linkDestination?: string | undefined;
+        responseLimit?: number | undefined;
+        subLinkText?: string | undefined;
+      };
+      output: ExtensionDataRef<HomePageWidgetData, 'home.widget.data', {}>;
+      inputs: {};
+      kind: 'home-page-widget';
+      name: 'featured-docs';
+      params: HomePageCardWidgetBlueprintParams;
+    }>;
     'home-page-widget:home/random-joke': OverridableExtensionDefinition<{
       kind: 'home-page-widget';
       name: 'random-joke';
@@ -61,25 +79,60 @@ const _default: OverridableFrontendPlugin<
       configInput: {};
       output: ExtensionDataRef<HomePageWidgetData, 'home.widget.data', {}>;
       inputs: {};
-      params: HomePageWidgetBlueprintParams;
+      params: HomePageCardWidgetBlueprintParams;
+    }>;
+    'home-page-widget:home/recently-visited': OverridableExtensionDefinition<{
+      config: {
+        numVisitsOpen: number | undefined;
+        numVisitsTotal: number | undefined;
+      };
+      configInput: {
+        numVisitsOpen?: number | undefined;
+        numVisitsTotal?: number | undefined;
+      };
+      output: ExtensionDataRef<HomePageWidgetData, 'home.widget.data', {}>;
+      inputs: {};
+      kind: 'home-page-widget';
+      name: 'recently-visited';
+      params: HomePageCardWidgetBlueprintParams;
     }>;
     'home-page-widget:home/starred-entities': OverridableExtensionDefinition<{
+      config: {
+        groupByKind: boolean | undefined;
+      };
+      configInput: {
+        groupByKind?: boolean | undefined;
+      };
+      output: ExtensionDataRef<HomePageWidgetData, 'home.widget.data', {}>;
+      inputs: {};
       kind: 'home-page-widget';
       name: 'starred-entities';
-      config: {};
-      configInput: {};
-      output: ExtensionDataRef<HomePageWidgetData, 'home.widget.data', {}>;
-      inputs: {};
-      params: HomePageWidgetBlueprintParams;
+      params: HomePageCardWidgetBlueprintParams;
     }>;
     'home-page-widget:home/toolkit': OverridableExtensionDefinition<{
-      kind: 'home-page-widget';
-      name: 'toolkit';
-      config: {};
-      configInput: {};
+      config: {
+        tools:
+          | {
+              url: string;
+              label: string;
+              icon?: string | undefined;
+            }[]
+          | undefined;
+      };
+      configInput: {
+        tools?:
+          | {
+              url: string;
+              label: string;
+              icon?: string | undefined;
+            }[]
+          | undefined;
+      };
       output: ExtensionDataRef<HomePageWidgetData, 'home.widget.data', {}>;
       inputs: {};
-      params: HomePageWidgetBlueprintParams;
+      kind: 'home-page-widget';
+      name: 'toolkit';
+      params: HomePageCardWidgetBlueprintParams;
     }>;
     'nav-item:home': OverridableExtensionDefinition<{
       kind: 'nav-item';
@@ -104,14 +157,52 @@ const _default: OverridableFrontendPlugin<
         title: string;
         icon: IconComponent;
         routeRef: RouteRef<undefined>;
+    'home-page-widget:home/top-visited': OverridableExtensionDefinition<{
+      config: {
+        numVisitsOpen: number | undefined;
+        numVisitsTotal: number | undefined;
       };
+      configInput: {
+        numVisitsOpen?: number | undefined;
+        numVisitsTotal?: number | undefined;
+      };
+      output: ExtensionDataRef<HomePageWidgetData, 'home.widget.data', {}>;
+      inputs: {};
+      kind: 'home-page-widget';
+      name: 'top-visited';
+      params: HomePageCardWidgetBlueprintParams;
     }>;
     'page:home': OverridableExtensionDefinition<{
       config: {
+        layoutConfig:
+          | {
+              height: number;
+              width: number;
+              x: number;
+              y: number;
+              component: string;
+              resizable?: boolean | undefined;
+              deletable?: boolean | undefined;
+              movable?: boolean | undefined;
+            }[]
+          | undefined;
         path: string | undefined;
         title: string | undefined;
       };
       configInput: {
+        layoutConfig?:
+          | {
+              height: number;
+              width: number;
+              x: number;
+              y: number;
+              component: string;
+              resizable?: boolean | undefined;
+              deletable?: boolean | undefined;
+              movable?: boolean | undefined;
+            }[]
+          | undefined;
+        title?: string | undefined;
         path?: string | undefined;
         title?: string | undefined;
       };

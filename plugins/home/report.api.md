@@ -18,7 +18,7 @@ import { ErrorApi } from '@backstage/core-plugin-api';
 import { IdentityApi } from '@backstage/core-plugin-api';
 import { JSX as JSX_2 } from 'react/jsx-runtime';
 import { JSX as JSX_3 } from 'react';
-import { ReactElement } from 'react';
+import { LayoutConfiguration } from '@backstage/plugin-home-react/alpha';
 import { ReactNode } from 'react';
 import { RendererProps as RendererProps_2 } from '@backstage/plugin-home-react';
 import { RouteRef } from '@backstage/core-plugin-api';
@@ -213,17 +213,7 @@ export const homeTranslationRef: TranslationRef<
 // @public
 export const isOperator: (s: string) => s is Operators;
 
-// @public
-export type LayoutConfiguration = {
-  component: ReactElement | string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  movable?: boolean;
-  deletable?: boolean;
-  resizable?: boolean;
-};
+export { LayoutConfiguration };
 
 // @public
 export type Operators = '<' | '<=' | '==' | '!=' | '>' | '>=' | 'contains';
