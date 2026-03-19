@@ -159,10 +159,19 @@ export class McpService {
       const startTime = performance.now();
       let errorType: string | undefined;
 
-      const auditorEvent = await this.auditor.createEvent({
-        eventId: 'tool-discovery',
-        ...(req && { request: req }),
-      });
+      let auditorEvent: any;
+      try {
+        auditorEvent = await this.auditor.createEvent({
+          eventId: 'tool-discovery',
+          ...(req && { request: req }),
+        });
+      } catch {
+        // Make audit logging best-effort: fall back to a no-op event if auditing is unavailable.
+        auditorEvent = {
+          success: async () => {},
+          fail: async () => {},
+        };
+      }
 
       try {
         const { actions: allActions } = await this.actions.list({
