@@ -76,7 +76,15 @@ export const createSseRouter = ({
       await server.connect(transport);
       await connectionEvent.success();
     } catch (error) {
-      await connectionEvent.fail({ error: error as Error });
+      const normalizedError =
+        error instanceof Error
+          ? error
+          : new Error(
+              typeof error === 'string'
+                ? error
+                : 'Unknown error during SSE connection',
+            );
+      await connectionEvent.fail({ error: normalizedError });
       throw error;
     }
   });

@@ -90,7 +90,6 @@ export const createStreamableRouter = ({
       });
 
       await server.connect(transport);
-      await connectionEvent.success();
 
       const ctx = tracing.propagation.extract(
         tracing.context.active(),
@@ -99,6 +98,7 @@ export const createStreamableRouter = ({
       await tracing.context.with(ctx, () =>
         transport.handleRequest(req, res, req.body),
       );
+      await connectionEvent.success();
 
       res.on('close', () => {
         transport.close();
@@ -141,7 +141,11 @@ export const createStreamableRouter = ({
         'error.type': errorType,
       });
 
-      await connectionEvent.fail({ error: error as Error });
+      await connectionEvent
+        .fail({
+          error: error instanceof Error ? error : new Error(String(error)),
+        })
+        .catch(() => {});
     }
   });
 

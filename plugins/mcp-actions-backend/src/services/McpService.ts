@@ -15,6 +15,7 @@
  */
 import {
   AuditorService,
+  AuditorServiceEvent,
   BackstageCredentials,
 } from '@backstage/backend-plugin-api';
 import type { Request } from 'express';
@@ -159,7 +160,7 @@ export class McpService {
       const startTime = performance.now();
       let errorType: string | undefined;
 
-      let auditorEvent: any;
+      let auditorEvent: AuditorServiceEvent;
       try {
         auditorEvent = await this.auditor.createEvent({
           eventId: 'tool-discovery',
@@ -199,7 +200,9 @@ export class McpService {
         };
       } catch (err) {
         errorType = err instanceof Error ? err.name : 'Error';
-        await auditorEvent.fail({ error: err as Error });
+        await auditorEvent.fail({
+          error: err instanceof Error ? err : new Error(String(err)),
+        });
         throw err;
       } finally {
         const durationSeconds = (performance.now() - startTime) / 1000;
@@ -216,12 +219,21 @@ export class McpService {
       let errorType: string | undefined;
       let isError = false;
 
-      const auditorEvent = await this.auditor.createEvent({
-        eventId: 'tool-execution',
-        severityLevel: 'medium',
-        ...(req && { request: req }),
-        meta: { toolName: params.name },
-      });
+      let auditorEvent: AuditorServiceEvent;
+      try {
+        auditorEvent = await this.auditor.createEvent({
+          eventId: 'tool-execution',
+          severityLevel: 'medium',
+          ...(req && { request: req }),
+          meta: { toolName: params.name },
+        });
+      } catch {
+        // Make audit logging best-effort: fall back to a no-op event if auditing is unavailable.
+        auditorEvent = {
+          success: async () => {},
+          fail: async () => {},
+        };
+      }
 
       try {
         return await this.tracingService.startActiveSpan(
@@ -309,7 +321,13 @@ export class McpService {
         );
       } catch (err) {
         errorType = err instanceof Error ? err.name : 'Error';
-        await auditorEvent.fail({ error: err as Error });
+        try {
+          await auditorEvent.fail({
+            error: err instanceof Error ? err : new Error(String(err)),
+          });
+        } catch {
+          // best-effort
+        }
         throw err;
       } finally {
         const durationSeconds = (performance.now() - startTime) / 1000;
