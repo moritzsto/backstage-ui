@@ -18,7 +18,11 @@ import { Router } from 'express';
 import { McpService } from '../services/McpService';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { TracingService } from '@backstage/backend-plugin-api/alpha';
-import { AuditorService, HttpAuthService } from '@backstage/backend-plugin-api';
+import {
+  AuditorService,
+  AuditorServiceEvent,
+  HttpAuthService,
+} from '@backstage/backend-plugin-api';
 import { McpServerConfig } from '../config';
 
 /**
@@ -41,11 +45,17 @@ export const createSseRouter = ({
   const transportsToSessionId = new Map<string, SSEServerTransport>();
 
   router.get('/', async (req, res) => {
-    const connectionEvent = await auditor.createEvent({
-      eventId: 'connection',
-      request: req,
-      meta: { transport: 'sse', actionType: 'established' },
-    });
+    let connectionEvent: AuditorServiceEvent;
+    try {
+      connectionEvent = await auditor.createEvent({
+        eventId: 'connection',
+        request: req,
+        meta: { transport: 'sse', actionType: 'established' },
+      });
+    } catch {
+      // Make audit logging best-effort: fall back to a no-op event if auditing is unavailable.
+      connectionEvent = { success: async () => {}, fail: async () => {} };
+    }
 
     try {
       const server = mcpService.getServer({

@@ -24,9 +24,10 @@ import {
   TracingService,
 } from '@backstage/backend-plugin-api/alpha';
 import {
+  AuditorService,
+  AuditorServiceEvent,
   HttpAuthService,
   LoggerService,
-  AuditorService,
 } from '@backstage/backend-plugin-api';
 import { MetricsService } from '@backstage/backend-plugin-api/alpha';
 import { bucketBoundaries, McpServerSessionAttributes } from '../metrics';
@@ -70,11 +71,17 @@ export const createStreamableRouter = ({
       'network.protocol.name': 'http',
     };
 
-    const connectionEvent = await auditor.createEvent({
-      eventId: 'connection',
-      request: req,
-      meta: { transport: 'streamable', actionType: 'established' },
-    });
+    let connectionEvent: AuditorServiceEvent;
+    try {
+      connectionEvent = await auditor.createEvent({
+        eventId: 'connection',
+        request: req,
+        meta: { transport: 'streamable', actionType: 'established' },
+      });
+    } catch {
+      // Make audit logging best-effort: fall back to a no-op event if auditing is unavailable.
+      connectionEvent = { success: async () => {}, fail: async () => {} };
+    }
 
     try {
       const server = mcpService.getServer({
