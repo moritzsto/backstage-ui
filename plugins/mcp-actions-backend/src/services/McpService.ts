@@ -182,7 +182,11 @@ export class McpService {
           ? this.filterActions(allActions, serverConfig)
           : allActions;
 
-        await auditorEvent.success({ meta: { toolCount: actions.length } });
+        try {
+          await auditorEvent.success({ meta: { toolCount: actions.length } });
+        } catch {
+          // best-effort
+        }
 
         return {
           tools: actions.map(action => ({
@@ -200,9 +204,13 @@ export class McpService {
         };
       } catch (err) {
         errorType = err instanceof Error ? err.name : 'Error';
-        await auditorEvent.fail({
-          error: err instanceof Error ? err : new Error(String(err)),
-        });
+        try {
+          await auditorEvent.fail({
+            error: err instanceof Error ? err : new Error(String(err)),
+          });
+        } catch {
+          // best-effort
+        }
         throw err;
       } finally {
         const durationSeconds = (performance.now() - startTime) / 1000;
