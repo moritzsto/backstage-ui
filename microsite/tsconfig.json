@@ -13,7 +13,7 @@
       "@docusaurus/theme-classic",
       "docusaurus-plugin-sass",
       "node",
-      "webpack-env",
+      "webpack-env"
     ]
   },
   "exclude": [".docusaurus", "build"]
