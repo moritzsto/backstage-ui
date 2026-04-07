@@ -142,22 +142,13 @@ const config: Config = {
     repoUrl: 'https://github.com/backstage/backstage',
   },
   onBrokenLinks: 'log',
+  storage: {
+    type: 'localStorage',
+    namespace: true,
+  },
   future: {
-    v4: {
-      removeLegacyPostBuildHeadAttribute: true,
-    },
-    experimental_faster: {
-      swcJsLoader: true,
-      swcJsMinimizer: true,
-      lightningCssMinimizer: true,
-      rspackBundler: true,
-      mdxCrossCompilerCache: true,
-      rspackPersistentCache: true,
-      // TODO: React has an issue with server rendering here.
-      // ssgWorkerThreads: true,
-      // TODO: This prints extra warnings in the console, add back when we have a fix.
-      // swcHtmlMinimizer: true,
-    },
+    v4: true,
+    faster: true,
   },
   presets: [
     [
@@ -202,7 +193,7 @@ const config: Config = {
           onInlineAuthors: 'ignore',
         },
         theme: {
-          customCss: 'src/theme/customTheme.scss',
+          customCss: require.resolve('./src/theme/customTheme.scss'),
         },
         gtag: {
           trackingID: 'G-KSEVGGNCJW',
@@ -229,7 +220,32 @@ const config: Config = {
     },
   },
   plugins: [
-    'docusaurus-plugin-sass',
+    [
+      'docusaurus-plugin-sass',
+      {
+        sassOptions: {
+          loadPaths: [resolvePath(__dirname)],
+        },
+      },
+    ],
+    // Workaround: postcss-preset-env polyfills @layer by converting it to
+    // :not(#\#) specificity hacks, which breaks useCssCascadeLayers.
+    // Disable the cascade-layers polyfill so native @layer is preserved.
+    // See https://github.com/facebook/docusaurus/pull/11142
+    function disableCascadeLayersPolyfillPlugin() {
+      return {
+        name: 'disable-cascade-layers-polyfill',
+        configurePostCss(postCssOptions) {
+          postCssOptions.plugins = postCssOptions.plugins.map(plugin => {
+            if (Array.isArray(plugin) && typeof plugin[0] === 'string' && plugin[0].includes('postcss-preset-env')) {
+              return [plugin[0], { ...plugin[1], features: { ...plugin[1]?.features, 'cascade-layers': false } }];
+            }
+            return plugin;
+          });
+          return postCssOptions;
+        },
+      };
+    },
     function disableExpensiveBundlerOptimizationPlugin() {
       return {
         name: 'disable-expensive-bundler-optimizations',
