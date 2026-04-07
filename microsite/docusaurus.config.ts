@@ -237,8 +237,18 @@ const config: Config = {
         name: 'disable-cascade-layers-polyfill',
         configurePostCss(postCssOptions) {
           postCssOptions.plugins = postCssOptions.plugins.map(plugin => {
-            if (Array.isArray(plugin) && typeof plugin[0] === 'string' && plugin[0].includes('postcss-preset-env')) {
-              return [plugin[0], { ...plugin[1], features: { ...plugin[1]?.features, 'cascade-layers': false } }];
+            if (
+              Array.isArray(plugin) &&
+              typeof plugin[0] === 'string' &&
+              plugin[0].includes('postcss-preset-env')
+            ) {
+              return [
+                plugin[0],
+                {
+                  ...plugin[1],
+                  features: { ...plugin[1]?.features, 'cascade-layers': false },
+                },
+              ];
             }
             return plugin;
           });
