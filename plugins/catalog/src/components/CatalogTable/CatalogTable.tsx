@@ -23,6 +23,7 @@ import {
 } from '@backstage/catalog-model';
 import {
   CodeSnippet,
+  FavoriteToggleIcon,
   Table,
   TableColumn,
   TableProps,
@@ -32,8 +33,11 @@ import {
   entityPresentationApiRef,
   entityPresentationSnapshot,
   getEntityRelations,
+  useAllEntitiesCount,
   useEntityList,
+  useOwnedEntitiesCount,
   useStarredEntities,
+  useStarredEntitiesCount,
   type EntityPresentationApi,
 } from '@backstage/plugin-catalog-react';
 import CircularProgress from '@material-ui/core/CircularProgress';
@@ -43,7 +47,7 @@ import Edit from '@material-ui/icons/Edit';
 import OpenInNew from '@material-ui/icons/OpenInNew';
 import { capitalize, sortBy } from 'lodash';
 import pluralize from 'pluralize';
-import { ReactNode, useMemo } from 'react';
+import { ReactElement, ReactNode, useMemo } from 'react';
 import { columnFactories } from './columns';
 import { CatalogTableColumnsFunc, CatalogTableRow } from './types';
 import { OffsetPaginatedCatalogTable } from './OffsetPaginatedCatalogTable';
@@ -52,7 +56,6 @@ import { defaultCatalogTableColumnsFunc } from './defaultCatalogTableColumnsFunc
 import { useApiHolder } from '@backstage/core-plugin-api';
 import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 import { catalogTranslationRef } from '../../alpha';
-import { FavoriteToggleIcon } from '@backstage/core-components';
 
 /**
  * Props for {@link CatalogTable}.
@@ -66,7 +69,11 @@ export interface CatalogTableProps {
   emptyContent?: ReactNode;
   /**
    * A static title to use for the table. If not provided, a title will be
-   * generated based on the current Kind and Type filters and total number of items.
+   * generated based on the current Kind and Type filters. When a `user` filter
+   * (starred, owned, or all) is active, the count shown in the title comes from
+   * the corresponding count hook (`useStarredEntitiesCount`, `useOwnedEntitiesCount`,
+   * or `useAllEntitiesCount`) so that it correctly reflects client-side filtering.
+   * For other filters the count comes from the backend's `totalItems`.
    */
   title?: string;
   subtitle?: string;
@@ -79,6 +86,24 @@ const sortEntities = (entities: Entity[], api?: EntityPresentationApi) => {
       entityPresentationSnapshot(e, { defaultKind: 'Component' }, api)
         .primaryTitle,
   );
+};
+
+// Small internal components that each call only one count hook.
+// Conditionally mounting these (based on the active user filter) avoids making
+// unnecessary catalog API requests when a given filter type is not active.
+const StarredTitle = ({ prefix }: { prefix: string }) => {
+  const { count } = useStarredEntitiesCount();
+  return <>{count !== undefined ? `${prefix} (${count})` : prefix}</>;
+};
+
+const OwnedTitle = ({ prefix }: { prefix: string }) => {
+  const { count } = useOwnedEntitiesCount();
+  return <>{count !== undefined ? `${prefix} (${count})` : prefix}</>;
+};
+
+const AllTitle = ({ prefix }: { prefix: string }) => {
+  const { count } = useAllEntitiesCount();
+  return <>{count !== undefined ? `${prefix} (${count})` : prefix}</>;
 };
 
 /**
@@ -181,7 +206,8 @@ export const CatalogTable = (props: CatalogTableProps) => {
       };
     },
     ({ entity }) => {
-      const isStarred = isStarredEntity(entity);
+      const entityRefString = stringifyEntityRef(entity);
+      const isStarred = isStarredEntity(entityRefString);
       const title = isStarred
         ? t('catalogTable.unStarActionTitle')
         : t('catalogTable.starActionTitle');
@@ -190,33 +216,47 @@ export const CatalogTable = (props: CatalogTableProps) => {
         cellStyle: { paddingLeft: '1em' },
         icon: () => <FavoriteToggleIcon isFavorite={isStarred} />,
         tooltip: title,
-        onClick: () => toggleStarredEntity(entity),
+        onClick: () => toggleStarredEntity(entityRefString),
       };
     },
   ];
 
   const currentKind = filters.kind?.label || '';
   const currentType = filters.type?.value || '';
-  const currentCount = typeof totalItems === 'number' ? `(${totalItems})` : '';
+
   // TODO(timbonicus): remove the title from the CatalogTable once using EntitySearchBar
   const titlePreamble = capitalize(
     filters.user?.value ?? t('catalogTable.allFilters'),
   );
-  const titleText =
-    props.title ||
-    [titlePreamble, currentType, pluralize(currentKind), currentCount]
-      .filter(s => s)
-      .join(' ');
+  const userFilterValue = filters.user?.value;
+  const titlePrefix = [titlePreamble, currentType, pluralize(currentKind)]
+    .filter(s => s)
+    .join(' ');
+
+  let titleContent: string | ReactElement;
+  if (props.title) {
+    titleContent = props.title;
+  } else if (userFilterValue === 'starred') {
+    titleContent = <StarredTitle prefix={titlePrefix} />;
+  } else if (userFilterValue === 'owned') {
+    titleContent = <OwnedTitle prefix={titlePrefix} />;
+  } else if (userFilterValue === 'all') {
+    titleContent = <AllTitle prefix={titlePrefix} />;
+  } else {
+    titleContent =
+      totalItems !== undefined ? `${titlePrefix} (${totalItems})` : titlePrefix;
+  }
+
   const title =
     loading && !isLoading ? (
       <span
         style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5em' }}
       >
-        {titleText}
+        {titleContent}
         <CircularProgress size="0.8em" data-testid="loading-indicator" />
       </span>
     ) : (
-      titleText
+      titleContent
     );
 
   const actions = props.actions || defaultActions;
