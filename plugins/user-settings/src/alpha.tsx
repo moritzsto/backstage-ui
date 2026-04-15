@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { type ReactNode, useContext, useRef, useEffect } from 'react';
 import {
   coreExtensionData,
   createExtensionInput,
@@ -20,7 +21,12 @@ import {
   PageBlueprint,
   NavItemBlueprint,
   SubPageBlueprint,
+  RoutingContractContext,
 } from '@backstage/frontend-plugin-api';
+import {
+  createScopedRouter,
+  type ScopedRouterResult,
+} from '@backstage/plugin-react-router-v7-adapter';
 import { Content } from '@backstage/core-components';
 import SettingsIcon from '@material-ui/icons/Settings';
 import { settingsRouteRef } from './plugin';
@@ -33,11 +39,45 @@ import { userSettingsTranslationRef as _userSettingsTranslationRef } from './tra
  */
 export const userSettingsTranslationRef = _userSettingsTranslationRef;
 
-const userSettingsPage = PageBlueprint.make({
-  params: {
-    path: '/settings',
-    routeRef: settingsRouteRef,
-    title: 'Settings',
+function SettingsAdapterRoot({ children }: { children: ReactNode }) {
+  const contract = useContext(RoutingContractContext);
+  const scopedRouterRef = useRef<ScopedRouterResult | null>(null);
+
+  useEffect(() => {
+    return () => {
+      scopedRouterRef.current?.dispose();
+      scopedRouterRef.current = null;
+    };
+  }, [contract]);
+
+  if (!contract) {
+    return <>{children}</>;
+  }
+
+  if (!scopedRouterRef.current) {
+    scopedRouterRef.current = createScopedRouter(contract);
+  }
+
+  const scopedRouter = scopedRouterRef.current;
+
+  return <scopedRouter.Router>{children}</scopedRouter.Router>;
+}
+
+const userSettingsPage = PageBlueprint.makeWithOverrides({
+  factory(originalFactory) {
+    const result = originalFactory({
+      path: '/settings',
+      routeRef: settingsRouteRef,
+      title: 'Settings',
+    });
+
+    return Array.from(result).map(value =>
+      value.id === coreExtensionData.reactElement.id
+        ? coreExtensionData.reactElement(
+            <SettingsAdapterRoot>{value.value}</SettingsAdapterRoot>,
+          )
+        : value,
+    );
   },
 });
 

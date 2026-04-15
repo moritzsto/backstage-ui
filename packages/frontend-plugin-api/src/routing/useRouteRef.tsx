@@ -15,7 +15,7 @@
  */
 
 import { useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useFrameworkLocation } from './useFrameworkLocation';
 import { AnyRouteRefParams } from './types';
 import { RouteRef } from './RouteRef';
 import { SubRouteRef } from './SubRouteRef';
@@ -39,7 +39,7 @@ export function useRouteRef<TParams extends AnyRouteRefParams>(
     | SubRouteRef<TParams>
     | ExternalRouteRef<TParams>,
 ): RouteFunc<TParams> | undefined {
-  const { pathname } = useLocation();
+  const { pathname } = useFrameworkLocation();
   const routeResolutionApi = useApi(routeResolutionApiRef);
 
   const routeFunc = useMemo(

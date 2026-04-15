@@ -21,7 +21,7 @@ import {
 import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
-import { Link } from 'react-router-dom';
+import { Link } from '@backstage/core-components';
 import { entityRouteRef } from '@backstage/plugin-catalog-react';
 import { useRouteRef } from '@backstage/core-plugin-api';
 import { FavoriteToggle } from '@backstage/core-components';

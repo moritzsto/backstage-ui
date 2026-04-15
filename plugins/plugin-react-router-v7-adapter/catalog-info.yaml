@@ -1,0 +1,9 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: backstage-plugin-react-router-v7-adapter
+  title: '@backstage/plugin-react-router-v7-adapter'
+spec:
+  lifecycle: experimental
+  type: backstage-web-library
+  owner: maintainers

@@ -15,10 +15,16 @@
  */
 import {
   configApiRef,
+  createApiRef,
   useAnalytics,
   useApi,
   useApp,
 } from '@backstage/core-plugin-api';
+import { NotImplementedError } from '@backstage/errors';
+import type {
+  NavigationControllerApi,
+  RoutingContract,
+} from '@backstage/frontend-plugin-api';
 // eslint-disable-next-line no-restricted-imports
 import MaterialLink, {
   LinkProps as MaterialLinkProps,
@@ -28,11 +34,13 @@ import Typography from '@material-ui/core/Typography';
 import classnames from 'classnames';
 import { trimEnd } from 'lodash';
 import {
+  createContext,
   ReactNode,
   ReactElement,
   MouseEvent as ReactMouseEvent,
   ElementType,
   forwardRef,
+  useContext,
 } from 'react';
 import {
   createRoutesFromChildren,
@@ -41,6 +49,54 @@ import {
   Route,
 } from 'react-router-dom';
 import OpenInNew from '@material-ui/icons/OpenInNew';
+import { getOrCreateGlobalSingleton } from '@backstage/version-bridge';
+
+/**
+ * A global singleton React context for the routing contract, shared between
+ * core-components and frontend-plugin-api via @backstage/version-bridge.
+ *
+ * The runtime value stays local so both packages can resolve the same
+ * singleton without importing each other's concrete context value.
+ *
+ * @internal
+ */
+export const routingContractContext = getOrCreateGlobalSingleton(
+  'routing-contract-context',
+  () => createContext<RoutingContract | undefined>(undefined),
+);
+
+/**
+ * Local API ref for the navigation controller, using the same id as in
+ * @backstage/frontend-plugin-api so that it resolves to the same API instance.
+ * @internal
+ */
+export const navigationControllerApiRef = createApiRef<NavigationControllerApi>(
+  {
+    id: 'core.navigation-controller',
+  },
+);
+
+/**
+ * Hook to safely get the navigation controller API, returning undefined
+ * when not available (e.g., in the old frontend system where the API
+ * is not registered).
+ *
+ * Uses try/catch because Backstage's useApi throws when the API is not
+ * found in the ApiHolder, and there is no public useOptionalApi hook.
+ * This matches the pattern used by useBaseUrl in this same file.
+ */
+function useOptionalNavigationController():
+  | NavigationControllerApi
+  | undefined {
+  try {
+    return useApi(navigationControllerApiRef);
+  } catch (e: unknown) {
+    if (e instanceof NotImplementedError) {
+      return undefined;
+    }
+    throw e;
+  }
+}
 
 export function isReactRouterBeta(): boolean {
   const [obj] = createRoutesFromChildren(<Route index element={<div />} />);
@@ -188,6 +244,8 @@ export const UnstyledLink = forwardRef<any, LinkProps>(
   ({ onClick, noTrack, externalLinkIcon, ...props }, ref) => {
     const classes = useStyles();
     const analytics = useAnalytics();
+    const contract = useContext(routingContractContext);
+    const frameworkNav = useOptionalNavigationController();
 
     // Adding the base path to URLs breaks react-router v6 stable, so we only
     // do it for beta. The react router version won't change at runtime so it is
@@ -210,6 +268,31 @@ export const UnstyledLink = forwardRef<any, LinkProps>(
         analytics.captureEvent('click', linkText, { attributes: { to } });
       }
     };
+
+    // Only links that cross plugin boundaries inside a scoped routing
+    // contract should bypass react-router. App chrome links in the legacy
+    // router still need to use react-router so the mounted route tree updates.
+    const isAbsolutePath = to.startsWith('/');
+    const isCrossPlugin =
+      isAbsolutePath && contract && !to.startsWith(contract.basePath);
+
+    if (!external && isCrossPlugin && frameworkNav) {
+      // Cross-plugin links inside a scoped contract use framework navigation.
+      return (
+        <a
+          {...props}
+          ref={ref}
+          href={to}
+          onClick={(event: ReactMouseEvent<any, MouseEvent>) => {
+            event.preventDefault();
+            handleClick(event);
+            frameworkNav.navigate(to);
+          }}
+        >
+          {props.children}
+        </a>
+      );
+    }
 
     return external ? (
       // External links

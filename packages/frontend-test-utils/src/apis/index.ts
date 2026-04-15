@@ -15,6 +15,11 @@
  */
 
 export { mockApis } from './mockApis';
+export {
+  createMockContract,
+  type MockContractOptions,
+  type MockContract,
+} from './createMockContract';
 export { createApiMock, type ApiMock } from './createApiMock';
 export {
   type MockApiFactorySymbol,

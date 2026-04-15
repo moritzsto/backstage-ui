@@ -102,6 +102,38 @@ describe('AppRoutes', () => {
     });
   });
 
+  it('should prefer a more specific entity route over the catalog index route', async () => {
+    const catalogPage = PageBlueprint.make({
+      name: 'catalog',
+      params: {
+        path: '/catalog',
+        loader: async () => (
+          <div data-testid="catalog-page">Catalog Index Page</div>
+        ),
+      },
+    });
+
+    const catalogEntityPage = PageBlueprint.make({
+      name: 'catalog-entity',
+      params: {
+        path: '/catalog/:namespace/:kind/:name',
+        loader: async () => (
+          <div data-testid="catalog-entity-page">Catalog Entity Page</div>
+        ),
+      },
+    });
+
+    renderTestApp({
+      extensions: [catalogPage, catalogEntityPage],
+      initialRouteEntries: ['/catalog/default/component/my-entity'],
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('catalog-entity-page')).toBeInTheDocument();
+      expect(screen.queryByTestId('catalog-page')).not.toBeInTheDocument();
+    });
+  });
+
   it('should support relative links within routes', async () => {
     const CatalogWithLinks = () => {
       return (

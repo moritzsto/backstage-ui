@@ -14,12 +14,18 @@
  * limitations under the License.
  */
 
+import { type ReactNode, useContext, useRef, useEffect } from 'react';
 import { convertLegacyRouteRef } from '@backstage/core-compat-api';
 import {
   coreExtensionData,
   createExtensionInput,
   PageBlueprint,
+  RoutingContractContext,
 } from '@backstage/frontend-plugin-api';
+import {
+  createScopedRouter,
+  type ScopedRouterResult,
+} from '@backstage/plugin-react-router-v6-adapter';
 import {
   AsyncEntityProvider,
   entityRouteRef,
@@ -35,6 +41,30 @@ import CategoryIcon from '@material-ui/icons/Category';
 import { rootRouteRef } from '../routes';
 import { useEntityFromUrl } from '../components/CatalogEntityPage/useEntityFromUrl';
 import { buildFilterFn } from './filter/FilterWrapper';
+
+function CatalogAdapterRoot({ children }: { children: ReactNode }) {
+  const contract = useContext(RoutingContractContext);
+  const scopedRouterRef = useRef<ScopedRouterResult | null>(null);
+
+  useEffect(() => {
+    return () => {
+      scopedRouterRef.current?.dispose();
+      scopedRouterRef.current = null;
+    };
+  }, [contract]);
+
+  if (!contract) {
+    return <>{children}</>;
+  }
+
+  if (!scopedRouterRef.current) {
+    scopedRouterRef.current = createScopedRouter(contract);
+  }
+
+  const scopedRouter = scopedRouterRef.current;
+
+  return <scopedRouter.Router>{children}</scopedRouter.Router>;
+}
 
 export const catalogPage = PageBlueprint.makeWithOverrides({
   inputs: {
@@ -69,10 +99,12 @@ export const catalogPage = PageBlueprint.makeWithOverrides({
           filter.get(coreExtensionData.reactElement),
         );
         return (
-          <NfsDefaultCatalogPage
-            filters={<>{filters}</>}
-            pagination={config.pagination}
-          />
+          <CatalogAdapterRoot>
+            <NfsDefaultCatalogPage
+              filters={<>{filters}</>}
+              pagination={config.pagination}
+            />
+          </CatalogAdapterRoot>
         );
       },
     });
@@ -208,7 +240,11 @@ export const catalogEntityPage = PageBlueprint.makeWithOverrides({
           );
         };
 
-        return <Component />;
+        return (
+          <CatalogAdapterRoot>
+            <Component />
+          </CatalogAdapterRoot>
+        );
       },
     });
   },

@@ -17,15 +17,15 @@
 import { renderInTestApp, TestApiProvider } from '@backstage/test-utils';
 import { SettingsPage } from './SettingsPage';
 import { UserSettingsTab } from '../UserSettingsTab';
-import { useOutlet } from 'react-router-dom';
+import { useOutlet } from 'react-router';
 import { SettingsLayout } from '../SettingsLayout';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { catalogApiRef, entityRouteRef } from '@backstage/plugin-catalog-react';
 import { catalogApiMock } from '@backstage/plugin-catalog-react/testUtils';
 
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
+jest.mock('react-router', () => ({
+  ...jest.requireActual('react-router'),
   useOutlet: jest.fn().mockReturnValue(undefined),
 }));
 

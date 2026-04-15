@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { Fragment } from 'react';
-import { Link, MemoryRouter } from 'react-router-dom';
+import { Fragment, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { prepareSpecializedApp } from '@backstage/frontend-app-api';
 import { RenderResult, render } from '@testing-library/react';
 import { ConfigReader } from '@backstage/config';
@@ -40,6 +40,9 @@ import { getMockApiFactory } from '../apis/MockWithApiFactory';
 // eslint-disable-next-line @backstage/no-relative-monorepo-imports
 import type { CreateSpecializedAppInternalOptions } from '../../../frontend-app-api/src/wiring/createSpecializedApp';
 import { TestApiPairs } from '../apis/TestApiProvider';
+// eslint-disable-next-line @backstage/no-relative-monorepo-imports
+import { ScopedRouterProvider } from '../../../frontend-plugin-api/src/blueprints/ScopedRouterProvider';
+import { createMockContract } from '../apis/createMockContract';
 
 const DEFAULT_MOCK_CONFIG = {
   app: { baseUrl: 'http://localhost:3000' },
@@ -201,23 +204,27 @@ export function renderInTestApp<const TApiPairs extends any[] = any[]>(
     }
   }
 
+  const initialEntry = options?.initialRouteEntries?.[0] ?? '/';
+
+  function TestRouter({ children }: { children: ReactNode }) {
+    const contract = createMockContract({
+      basePath: '/',
+      initialLocation: initialEntry,
+    });
+    return (
+      <ScopedRouterProvider contract={contract}>
+        {children}
+      </ScopedRouterProvider>
+    );
+  }
+
   const features: FrontendFeature[] = [
     createFrontendModule({
       pluginId: 'app',
       extensions: [
         RouterBlueprint.make({
           params: {
-            component: ({ children }) => (
-              <MemoryRouter
-                initialEntries={options?.initialRouteEntries}
-                future={{
-                  v7_relativeSplatPath: false,
-                  v7_startTransition: false,
-                }}
-              >
-                {children}
-              </MemoryRouter>
-            ),
+            component: TestRouter,
           },
         }),
       ],

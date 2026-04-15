@@ -24,7 +24,13 @@
  * @packageDocumentation
  */
 
-import { lazy as reactLazy } from 'react';
+import {
+  type ReactNode,
+  lazy as reactLazy,
+  useContext,
+  useRef,
+  useEffect,
+} from 'react';
 import {
   createExtensionInput,
   PageBlueprint,
@@ -37,6 +43,7 @@ import {
   errorApiRef,
   ApiBlueprint,
   ExtensionBoundary,
+  RoutingContractContext,
 } from '@backstage/frontend-plugin-api';
 import { VisitListener } from './components/';
 import { visitsApiRef, VisitsStorageApi, VisitsWebStorageApi } from './api';
@@ -48,8 +55,45 @@ import {
   HomePageWidgetBlueprint,
   type HomePageLayoutProps,
 } from '@backstage/plugin-home-react/alpha';
+import {
+  createScopedRouter,
+  type TanStackScopedRouterResult,
+} from '@backstage/plugin-tanstack-router-adapter';
 
 const rootRouteRef = createRouteRef();
+
+/**
+ * Adapter root for TanStack Router integration.
+ *
+ * Uses the TanStack adapter's `Router` component which renders children inside
+ * the TanStack router context via a root route component. This allows children
+ * to use TanStack routing hooks (useNavigate, useParams, etc.).
+ *
+ * @internal
+ */
+function HomeAdapterRoot({ children }: { children: ReactNode }) {
+  const contract = useContext(RoutingContractContext);
+  const scopedRouterRef = useRef<TanStackScopedRouterResult | null>(null);
+
+  useEffect(() => {
+    return () => {
+      scopedRouterRef.current?.dispose();
+      scopedRouterRef.current = null;
+    };
+  }, [contract]);
+
+  if (!contract) {
+    return <>{children}</>;
+  }
+
+  if (!scopedRouterRef.current) {
+    scopedRouterRef.current = createScopedRouter(contract);
+  }
+
+  return (
+    <scopedRouterRef.current.Router>{children}</scopedRouterRef.current.Router>
+  );
+}
 
 const homePage = PageBlueprint.makeWithOverrides({
   inputs: {
@@ -87,7 +131,11 @@ const homePage = PageBlueprint.makeWithOverrides({
           node: widget.node,
         }));
 
-        return <Layout widgets={widgets} />;
+        return (
+          <HomeAdapterRoot>
+            <Layout widgets={widgets} />
+          </HomeAdapterRoot>
+        );
       },
     });
   },

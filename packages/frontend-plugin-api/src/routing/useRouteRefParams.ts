@@ -19,13 +19,23 @@ import { AnyRouteRefParams } from './types';
 import { RouteRef } from './RouteRef';
 import { SubRouteRef } from './SubRouteRef';
 
+let warned = false;
+
 /**
  * React hook for retrieving dynamic params from the current URL.
  * @param _routeRef - Ref of the current route.
  * @public
+ * @deprecated Use your router's native `useParams` hook instead.
  */
 export function useRouteRefParams<Params extends AnyRouteRefParams>(
   _routeRef: RouteRef<Params> | SubRouteRef<Params>,
 ): Params {
+  if (process.env.NODE_ENV === 'development' && !warned) {
+    warned = true;
+    // eslint-disable-next-line no-console
+    console.warn(
+      "useRouteRefParams is deprecated. Use your router's useParams() hook instead.",
+    );
+  }
   return useParams() as Params;
 }

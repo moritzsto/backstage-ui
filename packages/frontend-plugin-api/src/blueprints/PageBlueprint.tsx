@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import { JSX } from 'react';
+import { JSX, useContext } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { IconElement } from '../icons/types';
-import { RouteRef } from '../routing';
+import { RouteRef, RoutingContractContext } from '../routing';
 import {
   coreExtensionData,
   createExtensionBlueprint,
@@ -28,6 +28,7 @@ import { useApi } from '../apis/system';
 import { routeResolutionApiRef } from '../apis/definitions/RouteResolutionApi';
 import { pluginHeaderActionsApiRef } from '../apis/definitions/PluginHeaderActionsApi';
 import { RouteResolutionApi } from '../apis/definitions/RouteResolutionApi';
+import { ScopedRouterProvider } from './ScopedRouterProvider';
 
 function resolveTitleLink(
   routeResolutionApi: RouteResolutionApi,
@@ -142,30 +143,34 @@ export const PageBlueprint = createExtensionBlueprint({
         const headerActionsApi = useApi(pluginHeaderActionsApiRef);
         const headerActions = headerActionsApi.getPluginHeaderActions(pluginId);
 
+        const contract = useContext(RoutingContractContext);
+
         return (
-          <PageLayout
-            title={resolvedTitle}
-            icon={resolvedIcon}
-            tabs={tabs}
-            titleLink={titleLink}
-            headerActions={headerActions}
-          >
-            <Routes>
-              {firstPagePath && (
-                <Route
-                  index
-                  element={<Navigate to={firstPagePath} replace />}
-                />
-              )}
-              {inputs.pages.map((page, index) => {
-                const path = page.get(coreExtensionData.routePath);
-                const element = page.get(coreExtensionData.reactElement);
-                return (
-                  <Route key={index} path={`${path}/*`} element={element} />
-                );
-              })}
-            </Routes>
-          </PageLayout>
+          <ScopedRouterProvider contract={contract}>
+            <PageLayout
+              title={resolvedTitle}
+              icon={resolvedIcon}
+              tabs={tabs}
+              titleLink={titleLink}
+              headerActions={headerActions}
+            >
+              <Routes>
+                {firstPagePath && (
+                  <Route
+                    index
+                    element={<Navigate to={firstPagePath} replace />}
+                  />
+                )}
+                {inputs.pages.map((page, index) => {
+                  const path = page.get(coreExtensionData.routePath);
+                  const element = page.get(coreExtensionData.reactElement);
+                  return (
+                    <Route key={index} path={`${path}/*`} element={element} />
+                  );
+                })}
+              </Routes>
+            </PageLayout>
+          </ScopedRouterProvider>
         );
       };
 

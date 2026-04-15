@@ -25,6 +25,7 @@ import {
   createApiFactory,
   ExternalRouteRef,
   identityApiRef,
+  navigationControllerApiRef,
   RouteFunc,
   RouteRef,
   RouteResolutionApi,
@@ -35,7 +36,8 @@ import {
   type ExtensionFactoryMiddleware,
   type IdentityApi,
 } from '@backstage/frontend-plugin-api';
-import { matchRoutes } from 'react-router-dom';
+import { NavigationController } from '../routing/NavigationController';
+import { matchRouteRefs } from '../routing/matchRouteRefs';
 // eslint-disable-next-line @backstage/no-relative-monorepo-imports
 import { AppIdentityProxy } from '../../../core-app-api/src/apis/implementations/IdentityApi/AppIdentityProxy';
 import { createRouteAliasResolver } from '../routing/RouteAliasResolver';
@@ -93,11 +95,11 @@ export class AppTreeApiProxy implements AppTreeApi {
       path = path.slice(this.appBasePath.length);
     }
 
-    const matchedRoutes = matchRoutes(routeInfo.routeObjects, path);
+    const matchedRoutes = matchRouteRefs(routeInfo.routeObjects, path);
 
     const matchedAppNodes =
-      matchedRoutes?.flatMap(routeObj => {
-        const appNode = routeObj.route.appNode;
+      matchedRoutes?.flatMap(match => {
+        const appNode = match.routeObject.appNode;
         return appNode ? [appNode] : [];
       }) || [];
 
@@ -213,6 +215,9 @@ export function createPhaseApis(options: {
     options.appBasePath,
   );
   const identityProxy = new PreparedAppIdentityProxy();
+  const navigationController = new NavigationController({
+    basename: options.appBasePath || undefined,
+  });
   const phaseApiRegistry = new FrontendApiRegistry();
   phaseApiRegistry.registerAll([
     createApiFactory(appTreeApiRef, appTreeApi),
@@ -221,6 +226,7 @@ export function createPhaseApis(options: {
       : []),
     createApiFactory(routeResolutionApiRef, routeResolutionApi),
     createApiFactory(identityApiRef, identityProxy),
+    createApiFactory(navigationControllerApiRef, navigationController),
     ...options.staticFactories,
   ]);
 
@@ -235,6 +241,7 @@ export function createPhaseApis(options: {
     routeResolutionApi,
     appTreeApi,
     identityApiProxy: identityProxy,
+    navigationController,
   };
 }
 

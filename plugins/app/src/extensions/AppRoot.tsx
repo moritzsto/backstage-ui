@@ -18,6 +18,7 @@ import {
   ComponentType,
   PropsWithChildren,
   ReactNode,
+  useMemo,
   useState,
   JSX,
 } from 'react';
@@ -31,6 +32,7 @@ import {
   createExtensionInput,
   routeResolutionApiRef,
   pluginWrapperApiRef,
+  navigationControllerApiRef,
   useAnalytics,
 } from '@backstage/frontend-plugin-api';
 import {
@@ -52,11 +54,12 @@ import {
 } from '@backstage/core-plugin-api';
 // eslint-disable-next-line @backstage/no-relative-monorepo-imports
 import { isProtectedApp } from '../../../../packages/core-app-api/src/app/isProtectedApp';
-import { BrowserRouter } from 'react-router-dom';
 // eslint-disable-next-line @backstage/no-relative-monorepo-imports
 import { RouteTracker } from '../../../../packages/frontend-app-api/src/routing/RouteTracker';
 // eslint-disable-next-line @backstage/no-relative-monorepo-imports
 import { getBasePath } from '../../../../packages/frontend-app-api/src/routing/getBasePath';
+// eslint-disable-next-line @backstage/no-relative-monorepo-imports
+import { ScopedRouterProvider } from '../../../../packages/frontend-plugin-api/src/blueprints/ScopedRouterProvider';
 
 export const AppRoot = createExtension({
   name: 'root',
@@ -208,17 +211,23 @@ export interface AppRouterProps {
 
 function DefaultRouter(props: PropsWithChildren<{}>) {
   const configApi = useApi(configApiRef);
+  const navigationController = useApi(navigationControllerApiRef);
   const basePath = getBasePath(configApi);
+
+  const rootContract = useMemo(
+    () => ({
+      basePath: '/' as const,
+      location$: navigationController.location$,
+      navigate: (to: string, opts?: { replace?: boolean; state?: unknown }) =>
+        navigationController.navigate(to, opts),
+    }),
+    [navigationController],
+  );
+
   return (
-    <BrowserRouter
-      basename={basePath}
-      future={{
-        v7_relativeSplatPath: false,
-        v7_startTransition: false,
-      }}
-    >
+    <ScopedRouterProvider contract={rootContract} basename={basePath}>
       {props.children}
-    </BrowserRouter>
+    </ScopedRouterProvider>
   );
 }
 
