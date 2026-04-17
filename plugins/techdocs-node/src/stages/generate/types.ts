@@ -70,6 +70,7 @@ export type GeneratorRunOptions = {
   logStream?: Writable;
   siteOptions?: { name?: string };
   runAsDefaultUser?: boolean;
+  mkdocsParameterStrict?: boolean;
 };
 
 /**
