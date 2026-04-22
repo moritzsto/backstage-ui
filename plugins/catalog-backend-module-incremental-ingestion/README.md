@@ -43,25 +43,37 @@ The Incremental Entity Provider backend is designed for data sources that provid
 
 1. Install `@backstage/plugin-catalog-backend-module-incremental-ingestion` with `yarn --cwd packages/backend add @backstage/plugin-catalog-backend-module-incremental-ingestion` from the Backstage root directory.
 
-2. Add the following code to the `packages/backend/src/index.ts` file:
+2. Add the incremental ingestion backend module to `packages/backend/src/index.ts`:
 
 ```diff
-+ import { catalogModuleCustomIncrementalIngestionProvider } from './extensions/catalogCustomIncrementalIngestion';
-
-
 const backend = createBackend();
 
 + backend.add(
-+   import(
-+     '@backstage/plugin-catalog-backend-module-incremental-ingestion/alpha'
-+   ),
++   import('@backstage/plugin-catalog-backend-module-incremental-ingestion'),
 + );
-
-// We have created this in section **Adding an Incremental Entity Provider to the catalog**
-+ backend.add(catalogModuleCustomIncrementalIngestionProvider);
 
 backend.start();
 ```
+
+### Optional DevTools Frontend
+
+If you want a DevTools UI for inspecting provider state and running the admin actions, you can also install `@backstage/plugin-catalog-incremental-ingestion` in your frontend app.
+
+```sh
+yarn --cwd packages/app add @backstage/plugin-catalog-incremental-ingestion
+```
+
+Then add the alpha plugin export to your app features:
+
+```tsx
+import catalogIncrementalIngestionPlugin from '@backstage/plugin-catalog-incremental-ingestion/alpha';
+
+const app = createApp({
+  features: [catalogIncrementalIngestionPlugin],
+});
+```
+
+The DevTools tab becomes available automatically once the backend admin routes are enabled.
 
 ## Administrative Routes
 
@@ -81,6 +93,8 @@ If you want to manage your incremental entity providers via REST endpoints, the 
 | POST   | `/api/catalog/incremental/cleanup`                     | Completely remove all records for ALL providers and schedule them to start again in 24 hours. (CAUTION! Can cause orphans!) |
 
 In all cases, `:provider` is the name of the incremental entity provider.
+
+All endpoints require authentication. Read endpoints require the `catalog.incremental-ingestion.read` permission; mutating endpoints require `catalog.incremental-ingestion.admin`.
 
 ## Writing an Incremental Entity Provider
 
@@ -119,7 +133,7 @@ interface IncrementalEntityProvider<TCursor, TContext> {
 }
 ```
 
-For this tutorial, we'll write an Incremental Entity Provider that will call an imaginary API. This imaginary API will return a list of imaginary services. The imaginary API has an imaginary API client with the following interface.
+For this tutorial, we'll write an Incremental Entity Provider that calls an imaginary API. This imaginary API will return a list of imaginary services. The imaginary API has an imaginary API client with the following interface.
 
 ```ts
 interface MyApiClient {
@@ -284,75 +298,33 @@ export class MyIncrementalEntityProvider implements IncrementalEntityProvider<Cu
 
 Now that you have your new Incremental Entity Provider, we can connect it to the catalog.
 
+If you want a file you can keep close to this tutorial instead of copying snippets out of the README, see:
+
+- [examples/providers/MyIncrementalEntityProvider.ts](./examples/providers/MyIncrementalEntityProvider.ts)
+
+If you want a complete working demo provider that is useful for local testing and learning, see:
+
+- [examples/providers/IncreasingNumberIncrementalIngestionProvider.ts](./examples/providers/IncreasingNumberIncrementalIngestionProvider.ts)
+
 ## Adding an Incremental Entity Provider to the catalog
 
-We'll assume you followed the [Installation](#installation) instructions. Now create a module inside `packages/backend/src/extensions/catalogCustomIncrementalIngestion.ts`.
+We'll assume you followed the [Installation](#installation) instructions. One way to wire a provider into the catalog is shown in this example module:
 
-```ts
-import {
-  coreServices,
-  createBackendModule,
-} from '@backstage/backend-plugin-api';
-import { incrementalIngestionProvidersExtensionPoint } from '@backstage/plugin-catalog-backend-module-incremental-ingestion/alpha';
+- [examples/modules/catalogCustomIncrementalIngestion.ts](./examples/modules/catalogCustomIncrementalIngestion.ts)
 
-export const catalogModuleCustomIncrementalIngestionProvider =
-  createBackendModule({
-    pluginId: 'catalog',
-    moduleId: 'custom-incremental-ingestion-provider',
-    register(env) {
-      env.registerInit({
-        deps: {
-          incrementalBuilder: incrementalIngestionProvidersExtensionPoint,
-          config: coreServices.rootConfig,
-        },
-        async init({ incrementalBuilder, config }) {
-          // Assuming the token for the API comes from config
-          const token = config.getString('myApiClient.token');
-          const myEntityProvider = new MyIncrementalEntityProvider(token);
+That file shows a complete backend module example, including provider registration and ingestion options.
 
-          const options = {
-            // How long should it attempt to read pages from the API in a
-            // single burst? Keep this short. The Incremental Entity Provider
-            // will attempt to read as many pages as it can in this time
-            burstLength: { seconds: 3 },
+If you copy that example module into `packages/backend/src/extensions/catalogCustomIncrementalIngestion.ts`, then add it to `packages/backend/src/index.ts`:
 
-            // How long should it wait between bursts?
-            burstInterval: { seconds: 3 },
+```diff
++ import { catalogModuleCustomIncrementalIngestionProvider } from './extensions/catalogCustomIncrementalIngestion';
 
-            // How long should it rest before re-ingesting again?
-            restLength: { days: 1 },
 
-            // Optional back-off configuration - how long should it wait to retry
-            // in the event of an error?
-            backoff: [
-              { seconds: 5 },
-              { seconds: 30 },
-              { minutes: 10 },
-              { hours: 3 },
-            ],
+const backend = createBackend();
 
-            // Optional. Use this to prevent removal of entities above a given
-            // percentage. This can be helpful if a data source is flaky and
-            // sometimes returns a successful status, but fewer than expected
-            // assets to add or maintain in the catalog.
-            rejectRemovalsAbovePercentage: 5,
++ backend.add(catalogModuleCustomIncrementalIngestionProvider);
 
-            // Optional. Similar to rejectRemovalsAbovePercentage, except it
-            // applies to complete, 100% failure of a data source. If true,
-            // a data source that returns a successful status but does not
-            // provide any assets to turn into entities will have its empty
-            // data set rejected.
-            rejectEmptySourceCollections: true,
-          };
-
-          incrementalBuilder.addProvider({
-            provider: myEntityProvider,
-            options,
-          });
-        },
-      });
-    },
-  });
+backend.start();
 ```
 
 That's it!!!

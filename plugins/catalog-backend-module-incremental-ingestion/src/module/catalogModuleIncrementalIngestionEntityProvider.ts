@@ -21,12 +21,17 @@ import {
 } from '@backstage/backend-plugin-api';
 import { metricsServiceRef } from '@backstage/backend-plugin-api/alpha';
 import { catalogProcessingExtensionPoint } from '@backstage/plugin-catalog-node';
+import {
+  catalogIncrementalIngestionAdminPermission,
+  catalogIncrementalIngestionReadPermission,
+} from '@backstage/plugin-catalog-common/alpha';
 import { WrapperProviders } from './WrapperProviders';
 import { eventsServiceRef } from '@backstage/plugin-events-node';
 import {
   IncrementalEntityProvider,
   IncrementalEntityProviderOptions,
 } from '../types';
+import { applyDatabaseMigrations } from '../database/migrations';
 
 /**
  * @public
@@ -110,6 +115,9 @@ export const catalogModuleIncrementalIngestionEntityProvider =
           scheduler: coreServices.scheduler,
           events: eventsServiceRef,
           metrics: metricsServiceRef,
+          permissions: coreServices.permissions,
+          permissionsRegistry: coreServices.permissionsRegistry,
+          httpAuth: coreServices.httpAuth,
         },
         async init({
           catalog,
@@ -120,8 +128,14 @@ export const catalogModuleIncrementalIngestionEntityProvider =
           scheduler,
           events,
           metrics,
+          permissions,
+          permissionsRegistry,
+          httpAuth,
         }) {
           const client = await database.getClient();
+          if (!database.migrations?.skip) {
+            await applyDatabaseMigrations(client);
+          }
 
           const providers = new WrapperProviders({
             config,
@@ -130,7 +144,14 @@ export const catalogModuleIncrementalIngestionEntityProvider =
             scheduler,
             events,
             metrics,
+            permissions,
+            httpAuth,
           });
+
+          permissionsRegistry.addPermissions([
+            catalogIncrementalIngestionReadPermission,
+            catalogIncrementalIngestionAdminPermission,
+          ]);
 
           for (const entry of addedProviders) {
             const wrapped = providers.wrap(entry.provider, entry.options);

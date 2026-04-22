@@ -1,0 +1,41 @@
+# Catalog Incremental Ingestion
+
+Frontend support for the catalog incremental ingestion module.
+
+## Features
+
+- Adds an `Incremental Ingestion` tab to DevTools in apps using the new frontend system
+- Shows provider health, current state, next action timing, and last error per provider
+- Supports admin actions such as `trigger` and mark cleanup through the catalog backend admin routes
+- Provides raw JSON views of provider status and ingestion marks for debugging
+
+## Screenshots
+
+![Incremental Ingestion DevTools tab showing the providers table](docs/catalog-incremental-ingestion-devtool.png)
+
+![Raw marks JSON dialog for a provider](docs/catalog-incremental-ingestion-devtool-raw.png)
+
+## Setup
+
+1. Install the backend module `@backstage/plugin-catalog-backend-module-incremental-ingestion`
+2. Install this frontend plugin in your app
+3. Add the alpha plugin export to your app features
+
+```tsx
+import catalogIncrementalIngestionPlugin from '@backstage/plugin-catalog-incremental-ingestion/alpha';
+
+const app = createApp({
+  features: [catalogIncrementalIngestionPlugin],
+});
+```
+
+The DevTools tab becomes available automatically once the backend admin routes are enabled.
+
+## Permissions
+
+The DevTools tab is guarded by the `catalog.incremental-ingestion.admin`
+permission. Backend incremental ingestion admin routes also enforce catalog
+incremental ingestion permissions:
+
+- `catalog.incremental-ingestion.read` for read-only status endpoints
+- `catalog.incremental-ingestion.admin` for mutating admin actions
