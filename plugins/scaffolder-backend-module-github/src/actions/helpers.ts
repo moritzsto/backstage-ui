@@ -440,16 +440,8 @@ async function pushFilesViaGitHubApi(input: {
   gitAuthorInfo?: { name?: string; email?: string };
   logger: LoggerService;
 }): Promise<{ commitHash: string }> {
-  const {
-    dir,
-    owner,
-    repo,
-    client,
-    defaultBranch,
-    commitMessage,
-    gitAuthorInfo,
-    logger,
-  } = input;
+  const { dir, owner, repo, client, defaultBranch, commitMessage, logger } =
+    input;
 
   const files = await collectFilesFromDir(dir);
   logger.info(`Collected ${files.length} files for API push`);
@@ -475,7 +467,7 @@ async function pushFilesViaGitHubApi(input: {
       content: '',
       branch: defaultBranch,
     });
-    headOid = init.commit.sha;
+    headOid = init.commit.sha!;
   }
 
   const additions = files.map(file => ({
