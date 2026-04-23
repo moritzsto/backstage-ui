@@ -13,6 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+jest.mock('node:fs', () => {
+  const actual = jest.requireActual('node:fs');
+  return {
+    ...actual,
+    promises: {
+      ...actual.promises,
+      readdir: jest.fn().mockResolvedValue([]),
+      readFile: jest.fn().mockResolvedValue(Buffer.from('test content')),
+    },
+  };
+});
+
 jest.mock('./gitHelpers', () => {
   return {
     ...jest.requireActual('./gitHelpers'),
@@ -54,6 +66,7 @@ const initRepoAndPushMocked = initRepoAndPush as jest.Mock<
   Promise<{ commitHash: string }>
 >;
 
+import { promises as fsPromises } from 'node:fs';
 import { Octokit } from 'octokit';
 
 const octokitMock = Octokit as unknown as jest.Mock;
@@ -67,6 +80,7 @@ const mockOctokit = {
       createInOrg: jest.fn(),
       createForAuthenticatedUser: jest.fn(),
       replaceAllTopics: jest.fn(),
+      createOrUpdateFileContents: jest.fn(),
     },
     teams: {
       getByName: jest.fn(),
@@ -79,6 +93,14 @@ const mockOctokit = {
     },
     activity: {
       setRepoSubscription: jest.fn(),
+    },
+    git: {
+      getRef: jest.fn(),
+      getCommit: jest.fn(),
+      createBlob: jest.fn(),
+      createTree: jest.fn(),
+      createCommit: jest.fn(),
+      updateRef: jest.fn(),
     },
   },
   request: jest.fn(),
@@ -1878,5 +1900,140 @@ describe('publish:github', () => {
       subscribed: true,
       ignored: false,
     });
+  });
+
+  it('should fall back to REST API when git push fails with ECONNRESET', async () => {
+    const econnError = new Error('socket hang up');
+    (econnError as NodeJS.ErrnoException).code = 'ECONNRESET';
+    initRepoAndPushMocked.mockRejectedValue(econnError);
+
+    mockOctokit.rest.users.getByUsername.mockResolvedValue({
+      data: { type: 'User' },
+    });
+    mockOctokit.rest.repos.createForAuthenticatedUser.mockResolvedValue({
+      data: {
+        clone_url: 'https://github.com/clone/url.git',
+        html_url: 'https://github.com/html/url',
+      },
+    });
+
+    (fsPromises.readdir as jest.Mock).mockResolvedValue([
+      { name: 'README.md', isDirectory: () => false },
+      { name: 'index.ts', isDirectory: () => false },
+    ]);
+    (fsPromises.readFile as jest.Mock).mockResolvedValue(
+      Buffer.from('file content'),
+    );
+
+    mockOctokit.rest.git.getRef.mockResolvedValue({
+      data: { object: { sha: 'head-sha' } },
+    });
+    mockOctokit.rest.git.getCommit.mockResolvedValue({
+      data: { tree: { sha: 'tree-sha' } },
+    });
+    mockOctokit.rest.git.createBlob.mockResolvedValue({
+      data: { sha: 'blob-sha' },
+    });
+    mockOctokit.rest.git.createTree.mockResolvedValue({
+      data: { sha: 'new-tree-sha' },
+    });
+    mockOctokit.rest.git.createCommit.mockResolvedValue({
+      data: { sha: 'new-commit-sha' },
+    });
+    mockOctokit.rest.git.updateRef.mockResolvedValue({ data: {} });
+
+    await action.handler({
+      ...mockContext,
+      input: { ...mockContext.input, protectDefaultBranch: false },
+    });
+
+    expect(initRepoAndPush).toHaveBeenCalled();
+    expect(mockOctokit.rest.git.createBlob).toHaveBeenCalledTimes(2);
+    expect(mockOctokit.rest.git.createTree).toHaveBeenCalled();
+    expect(mockOctokit.rest.git.createCommit).toHaveBeenCalled();
+    expect(mockOctokit.rest.git.updateRef).toHaveBeenCalled();
+    expect(mockContext.output).toHaveBeenCalledWith(
+      'commitHash',
+      'new-commit-sha',
+    );
+  });
+
+  it('should initialize empty repo via Contents API in fallback', async () => {
+    const econnError = new Error('socket hang up');
+    (econnError as NodeJS.ErrnoException).code = 'ECONNRESET';
+    initRepoAndPushMocked.mockRejectedValue(econnError);
+
+    mockOctokit.rest.users.getByUsername.mockResolvedValue({
+      data: { type: 'User' },
+    });
+    mockOctokit.rest.repos.createForAuthenticatedUser.mockResolvedValue({
+      data: {
+        clone_url: 'https://github.com/clone/url.git',
+        html_url: 'https://github.com/html/url',
+      },
+    });
+
+    (fsPromises.readdir as jest.Mock).mockResolvedValue([
+      { name: 'README.md', isDirectory: () => false },
+    ]);
+    (fsPromises.readFile as jest.Mock).mockResolvedValue(
+      Buffer.from('content'),
+    );
+
+    mockOctokit.rest.git.getRef.mockRejectedValue(new Error('Not Found'));
+    mockOctokit.rest.repos.createOrUpdateFileContents.mockResolvedValue({
+      data: { commit: { sha: 'init-sha' } },
+    });
+    mockOctokit.rest.git.getCommit.mockResolvedValue({
+      data: { tree: { sha: 'tree-sha' } },
+    });
+    mockOctokit.rest.git.createBlob.mockResolvedValue({
+      data: { sha: 'blob-sha' },
+    });
+    mockOctokit.rest.git.createTree.mockResolvedValue({
+      data: { sha: 'new-tree-sha' },
+    });
+    mockOctokit.rest.git.createCommit.mockResolvedValue({
+      data: { sha: 'new-commit-sha' },
+    });
+    mockOctokit.rest.git.updateRef.mockResolvedValue({ data: {} });
+
+    await action.handler({
+      ...mockContext,
+      input: { ...mockContext.input, protectDefaultBranch: false },
+    });
+
+    expect(
+      mockOctokit.rest.repos.createOrUpdateFileContents,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        owner: 'owner',
+        repo: 'repo',
+        path: '.gitkeep',
+      }),
+    );
+    expect(mockOctokit.rest.git.createCommit).toHaveBeenCalled();
+  });
+
+  it('should rethrow non-ECONNRESET errors from git push', async () => {
+    const authError = new Error('Authentication failed');
+    (authError as NodeJS.ErrnoException).code = 'AuthError';
+    initRepoAndPushMocked.mockRejectedValue(authError);
+
+    mockOctokit.rest.users.getByUsername.mockResolvedValue({
+      data: { type: 'User' },
+    });
+    mockOctokit.rest.repos.createForAuthenticatedUser.mockResolvedValue({
+      data: {
+        clone_url: 'https://github.com/clone/url.git',
+        html_url: 'https://github.com/html/url',
+      },
+    });
+
+    await expect(action.handler(mockContext)).rejects.toThrow(
+      'Authentication failed',
+    );
+
+    expect(mockOctokit.rest.git.createBlob).not.toHaveBeenCalled();
   });
 });

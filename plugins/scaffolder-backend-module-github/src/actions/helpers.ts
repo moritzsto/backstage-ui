@@ -17,6 +17,8 @@
 import { Config } from '@backstage/config';
 import { NotFoundError, toError } from '@backstage/errors';
 import { Octokit } from 'octokit';
+import { promises as fsPromises, Dirent } from 'node:fs';
+import { join } from 'node:path';
 
 import {
   getRepoSourceDirectory,
@@ -322,18 +324,42 @@ export async function initRepoPushAndProtect(
   const commitMessage =
     getGitCommitMessage(gitCommitMessage, config) || 'initial commit';
 
-  const commitResult = await initRepoAndPush({
-    dir: getRepoSourceDirectory(workspacePath, sourcePath),
-    remoteUrl,
-    defaultBranch,
-    auth: {
-      username: 'x-access-token',
-      password,
-    },
-    logger,
-    commitMessage,
-    gitAuthorInfo,
-  });
+  let commitResult: { commitHash: string };
+  try {
+    commitResult = await initRepoAndPush({
+      dir: getRepoSourceDirectory(workspacePath, sourcePath),
+      remoteUrl,
+      defaultBranch,
+      auth: {
+        username: 'x-access-token',
+        password,
+      },
+      logger,
+      commitMessage,
+      gitAuthorInfo,
+    });
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === 'ECONNRESET' || code === 'HttpError') {
+      logger.warn(
+        `Git push failed with ${code}, retrying via GitHub REST API. ` +
+          'This can happen when a network proxy blocks the binary payload ' +
+          'in the git smart HTTP protocol.',
+      );
+      commitResult = await pushFilesViaGitHubApi({
+        dir: getRepoSourceDirectory(workspacePath, sourcePath),
+        owner,
+        repo,
+        client,
+        defaultBranch,
+        commitMessage,
+        gitAuthorInfo,
+        logger,
+      });
+    } else {
+      throw error;
+    }
+  }
 
   if (protectDefaultBranch) {
     try {
@@ -366,6 +392,141 @@ export async function initRepoPushAndProtect(
   }
 
   return { commitHash: commitResult.commitHash };
+}
+
+async function collectFilesFromDir(
+  dirPath: string,
+  basePath: string = '',
+): Promise<{ filePath: string; content: Buffer }[]> {
+  const entries: Dirent[] = await fsPromises.readdir(dirPath, {
+    withFileTypes: true,
+  });
+  const results: { filePath: string; content: Buffer }[] = [];
+  for (const entry of entries) {
+    const fullPath = join(dirPath, entry.name);
+    const relativePath = basePath ? `${basePath}/${entry.name}` : entry.name;
+    if (entry.name === '.git') {
+      continue;
+    }
+    if (entry.isDirectory()) {
+      results.push(...(await collectFilesFromDir(fullPath, relativePath)));
+    } else {
+      results.push({
+        filePath: relativePath,
+        content: await fsPromises.readFile(fullPath),
+      });
+    }
+  }
+  return results;
+}
+
+async function pushFilesViaGitHubApi(input: {
+  dir: string;
+  owner: string;
+  repo: string;
+  client: Octokit;
+  defaultBranch: string;
+  commitMessage: string;
+  gitAuthorInfo?: { name?: string; email?: string };
+  logger: LoggerService;
+}): Promise<{ commitHash: string }> {
+  const {
+    dir,
+    owner,
+    repo,
+    client,
+    defaultBranch,
+    commitMessage,
+    gitAuthorInfo,
+    logger,
+  } = input;
+
+  const files = await collectFilesFromDir(dir);
+  logger.info(`Collected ${files.length} files for API push`);
+
+  const authorInfo = {
+    name: gitAuthorInfo?.name ?? 'Scaffolder',
+    email: gitAuthorInfo?.email ?? 'scaffolder@backstage.io',
+  };
+
+  let headSha: string | undefined;
+  try {
+    const { data: ref } = await client.rest.git.getRef({
+      owner,
+      repo,
+      ref: `heads/${defaultBranch}`,
+    });
+    headSha = ref.object.sha;
+  } catch {
+    logger.info(
+      `No existing HEAD found for ${owner}/${repo}#${defaultBranch}, ` +
+        'initializing repository',
+    );
+    const { data: init } = await client.rest.repos.createOrUpdateFileContents({
+      owner,
+      repo,
+      path: '.gitkeep',
+      message: 'initialize repository',
+      content: '',
+      branch: defaultBranch,
+    });
+    headSha = init.commit.sha;
+  }
+
+  // Create blobs for each file
+  const treeItems: {
+    path: string;
+    mode: '100644';
+    type: 'blob';
+    sha: string;
+  }[] = [];
+
+  for (const file of files) {
+    const { data: blob } = await client.rest.git.createBlob({
+      owner,
+      repo,
+      content: file.content.toString('base64'),
+      encoding: 'base64',
+    });
+    treeItems.push({
+      path: file.filePath,
+      mode: '100644',
+      type: 'blob',
+      sha: blob.sha,
+    });
+  }
+
+  const { data: headCommit } = await client.rest.git.getCommit({
+    owner,
+    repo,
+    commit_sha: headSha!,
+  });
+
+  const { data: tree } = await client.rest.git.createTree({
+    owner,
+    repo,
+    tree: treeItems,
+    base_tree: headCommit.tree.sha,
+  });
+
+  const { data: newCommit } = await client.rest.git.createCommit({
+    owner,
+    repo,
+    message: commitMessage,
+    tree: tree.sha,
+    parents: [headSha!],
+    author: { name: authorInfo.name, email: authorInfo.email },
+  });
+
+  await client.rest.git.updateRef({
+    owner,
+    repo,
+    ref: `heads/${defaultBranch}`,
+    sha: newCommit.sha,
+  });
+
+  logger.info(`Pushed ${files.length} files via GitHub API: ${newCommit.sha}`);
+  return { commitHash: newCommit.sha };
 }
 
 function extractCollaboratorName(
