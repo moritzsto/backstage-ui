@@ -96,14 +96,10 @@ const mockOctokit = {
     },
     git: {
       getRef: jest.fn(),
-      getCommit: jest.fn(),
-      createBlob: jest.fn(),
-      createTree: jest.fn(),
-      createCommit: jest.fn(),
-      updateRef: jest.fn(),
     },
   },
   request: jest.fn(),
+  graphql: jest.fn(),
 };
 jest.mock('octokit', () => ({
   Octokit: jest.fn(),
@@ -1902,7 +1898,7 @@ describe('publish:github', () => {
     });
   });
 
-  it('should fall back to REST API when git push fails with ECONNRESET', async () => {
+  it('should fall back to GraphQL API when git push fails with ECONNRESET', async () => {
     const econnError = new Error('socket hang up');
     (econnError as NodeJS.ErrnoException).code = 'ECONNRESET';
     initRepoAndPushMocked.mockRejectedValue(econnError);
@@ -1928,19 +1924,9 @@ describe('publish:github', () => {
     mockOctokit.rest.git.getRef.mockResolvedValue({
       data: { object: { sha: 'head-sha' } },
     });
-    mockOctokit.rest.git.getCommit.mockResolvedValue({
-      data: { tree: { sha: 'tree-sha' } },
+    mockOctokit.graphql.mockResolvedValue({
+      createCommitOnBranch: { commit: { oid: 'new-commit-sha' } },
     });
-    mockOctokit.rest.git.createBlob.mockResolvedValue({
-      data: { sha: 'blob-sha' },
-    });
-    mockOctokit.rest.git.createTree.mockResolvedValue({
-      data: { sha: 'new-tree-sha' },
-    });
-    mockOctokit.rest.git.createCommit.mockResolvedValue({
-      data: { sha: 'new-commit-sha' },
-    });
-    mockOctokit.rest.git.updateRef.mockResolvedValue({ data: {} });
 
     await action.handler({
       ...mockContext,
@@ -1948,10 +1934,24 @@ describe('publish:github', () => {
     });
 
     expect(initRepoAndPush).toHaveBeenCalled();
-    expect(mockOctokit.rest.git.createBlob).toHaveBeenCalledTimes(2);
-    expect(mockOctokit.rest.git.createTree).toHaveBeenCalled();
-    expect(mockOctokit.rest.git.createCommit).toHaveBeenCalled();
-    expect(mockOctokit.rest.git.updateRef).toHaveBeenCalled();
+    expect(mockOctokit.graphql).toHaveBeenCalledWith(
+      expect.stringContaining('createCommitOnBranch'),
+      expect.objectContaining({
+        input: expect.objectContaining({
+          branch: {
+            repositoryNameWithOwner: 'owner/repo',
+            branchName: 'main',
+          },
+          expectedHeadOid: 'head-sha',
+          fileChanges: {
+            additions: expect.arrayContaining([
+              expect.objectContaining({ path: 'README.md' }),
+              expect.objectContaining({ path: 'index.ts' }),
+            ]),
+          },
+        }),
+      }),
+    );
     expect(mockContext.output).toHaveBeenCalledWith(
       'commitHash',
       'new-commit-sha',
@@ -1984,19 +1984,9 @@ describe('publish:github', () => {
     mockOctokit.rest.repos.createOrUpdateFileContents.mockResolvedValue({
       data: { commit: { sha: 'init-sha' } },
     });
-    mockOctokit.rest.git.getCommit.mockResolvedValue({
-      data: { tree: { sha: 'tree-sha' } },
+    mockOctokit.graphql.mockResolvedValue({
+      createCommitOnBranch: { commit: { oid: 'new-commit-sha' } },
     });
-    mockOctokit.rest.git.createBlob.mockResolvedValue({
-      data: { sha: 'blob-sha' },
-    });
-    mockOctokit.rest.git.createTree.mockResolvedValue({
-      data: { sha: 'new-tree-sha' },
-    });
-    mockOctokit.rest.git.createCommit.mockResolvedValue({
-      data: { sha: 'new-commit-sha' },
-    });
-    mockOctokit.rest.git.updateRef.mockResolvedValue({ data: {} });
 
     await action.handler({
       ...mockContext,
@@ -2012,7 +2002,14 @@ describe('publish:github', () => {
         path: '.gitkeep',
       }),
     );
-    expect(mockOctokit.rest.git.createCommit).toHaveBeenCalled();
+    expect(mockOctokit.graphql).toHaveBeenCalledWith(
+      expect.stringContaining('createCommitOnBranch'),
+      expect.objectContaining({
+        input: expect.objectContaining({
+          expectedHeadOid: 'init-sha',
+        }),
+      }),
+    );
   });
 
   it('should rethrow non-ECONNRESET errors from git push', async () => {
@@ -2034,6 +2031,6 @@ describe('publish:github', () => {
       'Authentication failed',
     );
 
-    expect(mockOctokit.rest.git.createBlob).not.toHaveBeenCalled();
+    expect(mockOctokit.graphql).not.toHaveBeenCalled();
   });
 });

@@ -420,6 +420,16 @@ async function collectFilesFromDir(
   return results;
 }
 
+const CREATE_COMMIT_ON_BRANCH_MUTATION = `
+  mutation CreateCommitOnBranch($input: CreateCommitOnBranchInput!) {
+    createCommitOnBranch(input: $input) {
+      commit {
+        oid
+      }
+    }
+  }
+`;
+
 async function pushFilesViaGitHubApi(input: {
   dir: string;
   owner: string;
@@ -444,19 +454,14 @@ async function pushFilesViaGitHubApi(input: {
   const files = await collectFilesFromDir(dir);
   logger.info(`Collected ${files.length} files for API push`);
 
-  const authorInfo = {
-    name: gitAuthorInfo?.name ?? 'Scaffolder',
-    email: gitAuthorInfo?.email ?? 'scaffolder@backstage.io',
-  };
-
-  let headSha: string | undefined;
+  let headOid: string;
   try {
     const { data: ref } = await client.rest.git.getRef({
       owner,
       repo,
       ref: `heads/${defaultBranch}`,
     });
-    headSha = ref.object.sha;
+    headOid = ref.object.sha;
   } catch {
     logger.info(
       `No existing HEAD found for ${owner}/${repo}#${defaultBranch}, ` +
@@ -470,63 +475,33 @@ async function pushFilesViaGitHubApi(input: {
       content: '',
       branch: defaultBranch,
     });
-    headSha = init.commit.sha;
+    headOid = init.commit.sha;
   }
 
-  // Create blobs for each file
-  const treeItems: {
-    path: string;
-    mode: '100644';
-    type: 'blob';
-    sha: string;
-  }[] = [];
+  const additions = files.map(file => ({
+    path: file.filePath,
+    contents: file.content.toString('base64'),
+  }));
 
-  for (const file of files) {
-    const { data: blob } = await client.rest.git.createBlob({
-      owner,
-      repo,
-      content: file.content.toString('base64'),
-      encoding: 'base64',
-    });
-    treeItems.push({
-      path: file.filePath,
-      mode: '100644',
-      type: 'blob',
-      sha: blob.sha,
-    });
-  }
-
-  const { data: headCommit } = await client.rest.git.getCommit({
-    owner,
-    repo,
-    commit_sha: headSha!,
+  const result: {
+    createCommitOnBranch: { commit: { oid: string } };
+  } = await client.graphql(CREATE_COMMIT_ON_BRANCH_MUTATION, {
+    input: {
+      branch: {
+        repositoryNameWithOwner: `${owner}/${repo}`,
+        branchName: defaultBranch,
+      },
+      message: { headline: commitMessage },
+      fileChanges: { additions },
+      expectedHeadOid: headOid,
+    },
   });
 
-  const { data: tree } = await client.rest.git.createTree({
-    owner,
-    repo,
-    tree: treeItems,
-    base_tree: headCommit.tree.sha,
-  });
-
-  const { data: newCommit } = await client.rest.git.createCommit({
-    owner,
-    repo,
-    message: commitMessage,
-    tree: tree.sha,
-    parents: [headSha!],
-    author: { name: authorInfo.name, email: authorInfo.email },
-  });
-
-  await client.rest.git.updateRef({
-    owner,
-    repo,
-    ref: `heads/${defaultBranch}`,
-    sha: newCommit.sha,
-  });
-
-  logger.info(`Pushed ${files.length} files via GitHub API: ${newCommit.sha}`);
-  return { commitHash: newCommit.sha };
+  const commitHash = result.createCommitOnBranch.commit.oid;
+  logger.info(
+    `Pushed ${files.length} files via GitHub GraphQL API: ${commitHash}`,
+  );
+  return { commitHash };
 }
 
 function extractCollaboratorName(
