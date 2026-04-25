@@ -35,6 +35,7 @@ import entityContents from './entityContents';
 import entityIconLinks from './entityIconLinks';
 import searchResultItems from './searchResultItems';
 import contextMenuItems from './contextMenuItems';
+import homeWidgets from './homeWidgets';
 
 /** @alpha */
 export default createFrontendPlugin({
@@ -64,5 +65,6 @@ export default createFrontendPlugin({
     ...entityIconLinks,
     ...contextMenuItems,
     ...searchResultItems,
+    ...homeWidgets,
   ],
 });

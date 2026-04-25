@@ -21,6 +21,8 @@ import { ExtensionDataRef } from '@backstage/frontend-plugin-api';
 import { ExtensionInput } from '@backstage/frontend-plugin-api';
 import { ExternalRouteRef } from '@backstage/core-plugin-api';
 import { FilterPredicate } from '@backstage/filter-predicates';
+import { HomePageCardWidgetBlueprintParams } from '@backstage/plugin-home-react/alpha';
+import { HomePageWidgetData } from '@backstage/plugin-home-react/alpha';
 import { IconComponent } from '@backstage/frontend-plugin-api';
 import { IconElement } from '@backstage/frontend-plugin-api';
 import { IconLinkVerticalProps } from '@backstage/core-components';
@@ -1026,6 +1028,19 @@ const _default: OverridableFrontendPlugin<
         useProps: () => Omit<IconLinkVerticalProps, 'color'>;
         filter?: FilterPredicate | ((entity: Entity) => boolean);
       };
+    }>;
+    'home-page-widget:catalog/starred-entities': OverridableExtensionDefinition<{
+      config: {
+        groupByKind: boolean | undefined;
+      };
+      configInput: {
+        groupByKind?: boolean | undefined;
+      };
+      output: ExtensionDataRef<HomePageWidgetData, 'home.widget.data', {}>;
+      inputs: {};
+      kind: 'home-page-widget';
+      name: 'starred-entities';
+      params: HomePageCardWidgetBlueprintParams;
     }>;
     'nav-item:catalog': OverridableExtensionDefinition<{
       kind: 'nav-item';

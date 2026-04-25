@@ -22,6 +22,7 @@ import { LayoutConfiguration } from '@backstage/plugin-home-react/alpha';
 import { ReactNode } from 'react';
 import { RendererProps as RendererProps_2 } from '@backstage/plugin-home-react';
 import { RouteRef } from '@backstage/core-plugin-api';
+import { StarredEntitiesProps } from '@backstage/plugin-catalog-react';
 import { StorageApi } from '@backstage/core-plugin-api';
 import { TranslationRef } from '@backstage/frontend-plugin-api';
 import { Variant } from '@material-ui/core/styles/createTypography';
@@ -181,6 +182,7 @@ export const homePlugin: BackstagePlugin<
 export const homeTranslationRef: TranslationRef<
   'home',
   {
+    readonly 'starredEntityListItem.removeFavoriteEntityTitle': 'Remove entity from favorites';
     readonly 'starredEntities.noStarredEntitiesMessage': 'Click the star beside an entity name to add it to this list!';
     readonly 'addWidgetDialog.title': 'Add new widget to dashboard';
     readonly 'customHomepageButtons.cancel': 'Cancel';
@@ -194,7 +196,6 @@ export const homeTranslationRef: TranslationRef<
     readonly 'widgetSettingsOverlay.editSettingsTooptip': 'Edit settings';
     readonly 'widgetSettingsOverlay.deleteWidgetTooltip': 'Delete widget';
     readonly 'widgetSettingsOverlay.submitButtonTitle': 'Submit';
-    readonly 'starredEntityListItem.removeFavoriteEntityTitle': 'Remove entity from favorites';
     readonly 'visitList.empty.title': 'There are no visits to show yet.';
     readonly 'visitList.empty.description': 'Once you start using Backstage, your visits will appear here as a quick link to carry on where you left off.';
     readonly 'visitList.few.title': 'The more pages you visit, the more pages will appear here.';
@@ -246,11 +247,7 @@ export const SettingsModal: (props: {
   children: JSX.Element;
 }) => JSX_2.Element;
 
-// @public
-export type StarredEntitiesProps = {
-  noStarredEntitiesMessage?: ReactNode | undefined;
-  groupByKind?: boolean;
-};
+export { StarredEntitiesProps };
 
 // @public (undocumented)
 export const TemplateBackstageLogo: (props: {
