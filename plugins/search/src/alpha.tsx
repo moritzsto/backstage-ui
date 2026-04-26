@@ -271,6 +271,7 @@ export const searchNavItem = NavItemBlueprint.make({
 /** @alpha */
 export const homePageSearchBar = HomePageWidgetBlueprint.make({
   params: {
+    render: 'basic',
     name: 'HomePageSearchBar',
     title: 'Search Bar',
     loader: async () =>

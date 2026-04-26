@@ -21,7 +21,7 @@ import { ExtensionDataRef } from '@backstage/frontend-plugin-api';
 import { ExtensionInput } from '@backstage/frontend-plugin-api';
 import { ExternalRouteRef } from '@backstage/core-plugin-api';
 import { FilterPredicate } from '@backstage/filter-predicates';
-import { HomePageCardWidgetBlueprintParams } from '@backstage/plugin-home-react/alpha';
+import { HomePageWidgetBlueprintParams } from '@backstage/plugin-home-react/alpha';
 import { HomePageWidgetData } from '@backstage/plugin-home-react/alpha';
 import { IconComponent } from '@backstage/frontend-plugin-api';
 import { IconElement } from '@backstage/frontend-plugin-api';
@@ -1040,7 +1040,7 @@ const _default: OverridableFrontendPlugin<
       inputs: {};
       kind: 'home-page-widget';
       name: 'starred-entities';
-      params: HomePageCardWidgetBlueprintParams;
+      params: HomePageWidgetBlueprintParams;
     }>;
     'nav-item:catalog': OverridableExtensionDefinition<{
       kind: 'nav-item';
