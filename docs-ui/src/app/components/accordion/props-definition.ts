@@ -45,6 +45,16 @@ export const accordionTriggerPropDefs: Record<string, PropDef> = {
     type: 'string',
     description: 'Secondary text displayed next to the title.',
   },
+  iconStart: {
+    type: 'enum',
+    values: ['ReactElement'],
+    description: 'Icon element to display at the start of the trigger.',
+  },
+  iconEnd: {
+    type: 'enum',
+    values: ['ReactElement'],
+    description: 'Icon element to display at the end of the trigger.',
+  },
   children: {
     type: 'enum',
     values: ['ReactNode'],

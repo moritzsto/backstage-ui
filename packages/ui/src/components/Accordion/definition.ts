@@ -53,12 +53,16 @@ export const AccordionTriggerDefinition =
       title: 'bui-AccordionTriggerTitle',
       subtitle: 'bui-AccordionTriggerSubtitle',
       icon: 'bui-AccordionTriggerIcon',
+      iconStart: 'bui-AccordionTriggerIconStart',
+      iconEnd: 'bui-AccordionTriggerIconEnd',
     },
     propDefs: {
       className: {},
       title: {},
       subtitle: {},
       children: {},
+      iconStart: {},
+      iconEnd: {},
     },
   });
 

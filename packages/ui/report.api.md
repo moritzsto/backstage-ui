@@ -177,12 +177,16 @@ export const AccordionTriggerDefinition: {
     readonly title: 'bui-AccordionTriggerTitle';
     readonly subtitle: 'bui-AccordionTriggerSubtitle';
     readonly icon: 'bui-AccordionTriggerIcon';
+    readonly iconStart: 'bui-AccordionTriggerIconStart';
+    readonly iconEnd: 'bui-AccordionTriggerIconEnd';
   };
   readonly propDefs: {
     readonly className: {};
     readonly title: {};
     readonly subtitle: {};
     readonly children: {};
+    readonly iconStart: {};
+    readonly iconEnd: {};
   };
 };
 
@@ -192,6 +196,8 @@ export type AccordionTriggerOwnProps = {
   title?: string;
   subtitle?: string;
   children?: ReactNode;
+  iconStart?: ReactElement;
+  iconEnd?: ReactElement;
 };
 
 // @public

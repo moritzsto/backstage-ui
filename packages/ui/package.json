@@ -60,6 +60,8 @@
   },
   "devDependencies": {
     "@backstage/cli": "workspace:^",
+    "@testing-library/jest-dom": "^6.0.0",
+    "@testing-library/react": "^16.0.0",
     "@storybook/react-vite": "^10.3.3",
     "@testing-library/jest-dom": "^6.0.0",
     "@testing-library/react": "^16.0.0",
