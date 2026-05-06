@@ -259,9 +259,6 @@ export class DefaultCatalogProcessingEngine {
             // just store the errors and trigger a stich so that they become visible to
             // the outside.
             if (!result.ok) {
-              this.logger.warn(
-                `Processing of ${entityRef} failed unexpectedly; deferred entities will not be persisted. Errors: ${errorsString}`,
-              );
               // notify the error listener if the entity can not be processed.
               Promise.resolve(undefined)
                 .then(() =>
