@@ -123,29 +123,36 @@ describe('FileReaderProcessor', () => {
     expect(emit).not.toHaveBeenCalled();
   });
 
-  it('should still emit notFoundError for a missing path containing escaped glob characters (#33326)', async () => {
-    // Regression test: the local isGlobPattern helper must not classify a
-    // literal path that merely contains escaped glob characters (e.g. `\*`
-    // on POSIX) as a glob. Such paths have to still surface notFoundError
-    // when they don't exist, otherwise a typo in a concrete path would be
-    // silently dropped. On Windows the backslash is a path separator so no
-    // escape-strip is performed; on POSIX the `\*` in the target below is
-    // an escaped literal, which glob resolves to nothing and which this
-    // helper must keep classified as a concrete path.
-    const processor = new FileReaderProcessor();
-    const emit = jest.fn();
+  // POSIX-only: the target below uses `\*` as an escaped-literal glob
+  // character, which is only meaningful on POSIX. On Windows `\` is a path
+  // separator, so there is no such thing as an "escaped glob character" in a
+  // target path and this scenario cannot arise. Skipping on Windows avoids a
+  // platform-specific false failure while still exercising the escape-strip
+  // branch on POSIX CI.
+  const itPosix = path.sep === '/' ? it : it.skip;
+  itPosix(
+    'should still emit notFoundError for a missing path containing escaped glob characters (#33326)',
+    async () => {
+      // Regression test: the local isGlobPattern helper must not classify a
+      // literal path that merely contains escaped glob characters (e.g. `\*`
+      // on POSIX) as a glob. Such paths have to still surface notFoundError
+      // when they don't exist, otherwise a typo in a concrete path would be
+      // silently dropped.
+      const processor = new FileReaderProcessor();
+      const emit = jest.fn();
 
-    const target = `${fixturesRoot}/missing\\*.yaml`;
-    await processor.readLocation(
-      { type: 'file', target },
-      false,
-      emit,
-      defaultEntityDataParser,
-    );
+      const target = `${fixturesRoot}/missing\\*.yaml`;
+      await processor.readLocation(
+        { type: 'file', target },
+        false,
+        emit,
+        defaultEntityDataParser,
+      );
 
-    expect(emit).toHaveBeenCalledTimes(1);
-    const [result] = emit.mock.calls[0];
-    expect(result.type).toBe('error');
-    expect(result.error.name).toBe('NotFoundError');
-  });
+      expect(emit).toHaveBeenCalledTimes(1);
+      const [result] = emit.mock.calls[0];
+      expect(result.type).toBe('error');
+      expect(result.error.name).toBe('NotFoundError');
+    },
+  );
 });
