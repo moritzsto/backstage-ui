@@ -70,7 +70,12 @@ export class FileReaderProcessor implements CatalogProcessor {
             );
           }
         }
-      } else if (!optional) {
+      } else if (!optional && !g.hasMagic(location.target)) {
+        // Only emit notFoundError for concrete paths that don't exist.
+        // For glob patterns that match zero files we stay silent: emitting
+        // notFoundError here caused deferred entities discovered by other
+        // targets in the same Location to be dropped by the processing
+        // orchestrator (see #33326).
         const message = `${location.type} ${location.target} does not exist`;
         emit(processingResult.notFoundError(location, message));
       }

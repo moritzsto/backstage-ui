@@ -102,4 +102,24 @@ describe('FileReaderProcessor', () => {
       target: expect.stringMatching(/^[^*]*$/),
     });
   });
+
+  it('should not emit notFoundError when a glob pattern matches zero files (#33326)', async () => {
+    const processor = new FileReaderProcessor();
+    const emit = jest.fn();
+
+    await processor.readLocation(
+      {
+        type: 'file',
+        target: `${path.join(fixturesRoot, 'no-such-dir', '*.yaml')}`,
+      },
+      false,
+      emit,
+      defaultEntityDataParser,
+    );
+
+    // No error should be emitted for a glob that matches nothing. Concrete
+    // missing paths remain covered by the 'should fail load from file with
+    // error' test above.
+    expect(emit).not.toHaveBeenCalled();
+  });
 });
