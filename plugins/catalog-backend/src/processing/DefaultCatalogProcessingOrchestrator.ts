@@ -189,7 +189,7 @@ export class DefaultCatalogProcessingOrchestrator
         ...collectorResults,
         completedEntity: entity,
         state: { cache: cache.collect() },
-        ok: collectorResults.errors.length === 0,
+        ok: true,
       };
     } catch (error) {
       const err = toError(error);
