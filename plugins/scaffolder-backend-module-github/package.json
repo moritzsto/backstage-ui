@@ -51,6 +51,7 @@
     "@backstage/plugin-scaffolder-node": "workspace:^",
     "@backstage/types": "workspace:^",
     "@octokit/core": "^5.0.0",
+    "@octokit/types": "^16.0.0",
     "@octokit/webhooks": "^10.9.2",
     "libsodium-wrappers": "^0.8.0",
     "octokit": "^3.0.0",

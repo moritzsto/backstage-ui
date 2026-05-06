@@ -32,6 +32,7 @@ import {
   createPublishGithubPullRequestAction,
   createGithubPagesEnableAction,
   createGithubBranchProtectionAction,
+  createGithubCommitsCompareAction,
 } from './actions';
 import {
   DefaultGithubCredentialsProvider,
@@ -110,6 +111,10 @@ export const githubModule = createBackendModule({
           }),
           createGithubBranchProtectionAction({
             integrations,
+          }),
+          createGithubCommitsCompareAction({
+            integrations,
+            githubCredentialsProvider,
           }),
         );
 

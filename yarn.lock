@@ -6733,6 +6733,7 @@ __metadata:
     "@backstage/plugin-scaffolder-node-test-utils": "workspace:^"
     "@backstage/types": "workspace:^"
     "@octokit/core": "npm:^5.0.0"
+    "@octokit/types": "npm:^16.0.0"
     "@octokit/webhooks": "npm:^10.9.2"
     "@types/libsodium-wrappers": "npm:^0.8.0"
     fs-extra: "npm:^11.2.0"
@@ -12842,6 +12843,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@octokit/openapi-types@npm:^27.0.0":
+  version: 27.0.0
+  resolution: "@octokit/openapi-types@npm:27.0.0"
+  checksum: 10/5cd2cdf4e41fdf522e15e3d53f3ece8380d98dda9173a6fc905828fb2c33e8733d5f5d2a757ae3a572525f4749748e66cb40e7939372132988d8eb4ba978d54f
+  languageName: node
+  linkType: hard
+
 "@octokit/plugin-paginate-graphql@npm:^4.0.0":
   version: 4.0.0
   resolution: "@octokit/plugin-paginate-graphql@npm:4.0.0"
@@ -13049,6 +13057,15 @@ __metadata:
   dependencies:
     "@octokit/openapi-types": "npm:^24.2.0"
   checksum: 10/32f8f5010d7faae128b0cdd0c221f0ca8c3781fe44483ecd87162b3da507db667f7369acda81340f6e2c9c374d9a938803409c6085c2c01d98210b6c58efb99a
+  languageName: node
+  linkType: hard
+
+"@octokit/types@npm:^16.0.0":
+  version: 16.0.0
+  resolution: "@octokit/types@npm:16.0.0"
+  dependencies:
+    "@octokit/openapi-types": "npm:^27.0.0"
+  checksum: 10/03d5cfc29556a9b53eae8beb1bf15c0b704dc722db2c51b53f093f3c3ee6c1d8e20b682be8117a3a17034b458be7746d1b22aaefb959ceb5152ad7589b39e2c9
   languageName: node
   linkType: hard
 

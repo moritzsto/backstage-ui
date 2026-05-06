@@ -94,6 +94,30 @@ export function createGithubBranchProtectionAction(options: {
 >;
 
 // @public
+export function createGithubCommitsCompareAction(options: {
+  integrations: ScmIntegrationRegistry;
+  githubCredentialsProvider?: GithubCredentialsProvider;
+}): TemplateAction<
+  {
+    repoUrl: string;
+    oldCommit: string;
+    newCommit: string;
+    token?: string | undefined;
+  },
+  {
+    commits: {
+      sha: string;
+      commitMessage: string;
+      commitDate: string;
+      authorName: string;
+      authorEmail: string;
+      pullRequestNumber?: number | undefined;
+    }[];
+  },
+  'v2'
+>;
+
+// @public
 export function createGithubDeployKeyAction(options: {
   integrations: ScmIntegrationRegistry;
 }): TemplateAction<

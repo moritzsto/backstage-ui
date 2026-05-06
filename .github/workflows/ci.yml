@@ -118,7 +118,16 @@ jobs:
 
         # We need to generate the API references as well, so that we can verify the doc links
       - name: check api reports and generate API reference
+        id: api-reports
         run: yarn build:api-reports:only --ci --docs
+
+      - name: Upload API Reports for Verification Testing
+        if: failure() && steps.api-reports.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: api-reports-${{ matrix.node-version }}
+          path: |
+            ${{ github.workspace }}/node_modules/.cache/api-extractor/**/report.api.md
 
       - name: verify api reference
         run: node scripts/verify-api-reference.js
