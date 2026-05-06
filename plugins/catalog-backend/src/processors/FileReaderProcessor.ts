@@ -27,6 +27,15 @@ import {
 
 const LOCATION_TYPE = 'file';
 
+// Detect whether a location target contains any glob meta-characters.
+// We use a local regex rather than `glob.hasMagic` so the check does not
+// depend on how the default `glob` import is resolved at runtime under
+// different module-interop setups.
+const GLOB_MAGIC_CHARS = /[*?[\]{}()|!]/;
+function isGlobPattern(target: string): boolean {
+  return GLOB_MAGIC_CHARS.test(target);
+}
+
 /** @public */
 export class FileReaderProcessor implements CatalogProcessor {
   getProcessorName(): string {
@@ -70,7 +79,7 @@ export class FileReaderProcessor implements CatalogProcessor {
             );
           }
         }
-      } else if (!optional && !g.hasMagic(location.target)) {
+      } else if (!optional && !isGlobPattern(location.target)) {
         // Only emit notFoundError for concrete paths that don't exist.
         // For glob patterns that match zero files we stay silent: emitting
         // notFoundError here caused deferred entities discovered by other
