@@ -27,13 +27,16 @@ import {
 
 const LOCATION_TYPE = 'file';
 
-// Detect whether a location target contains any glob meta-characters.
-// We use a local regex rather than `glob.hasMagic` so the check does not
-// depend on how the default `glob` import is resolved at runtime under
-// different module-interop setups.
+// Detect whether a location target contains any (unescaped) glob
+// meta-characters. We use a local helper rather than `glob.hasMagic` so the
+// check does not depend on how the default `glob` import is resolved at
+// runtime under different module-interop setups. We strip backslash-escaped
+// pairs first so that literal paths containing escaped glob characters
+// (e.g. `\*`, `\?`) are correctly treated as concrete paths, matching
+// minimatch / `glob.hasMagic` semantics.
 const GLOB_MAGIC_CHARS = /[*?[\]{}()|!]/;
 function isGlobPattern(target: string): boolean {
-  return GLOB_MAGIC_CHARS.test(target);
+  return GLOB_MAGIC_CHARS.test(target.replace(/\\./g, ''));
 }
 
 /** @public */
