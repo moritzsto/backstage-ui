@@ -2012,6 +2012,58 @@ describe('publish:github', () => {
     );
   });
 
+  it('should skip git push and use GraphQL API when HTTP proxy is detected', async () => {
+    const originalEnv = process.env.HTTPS_PROXY;
+    process.env.HTTPS_PROXY = 'http://proxy:3128';
+
+    try {
+      mockOctokit.rest.users.getByUsername.mockResolvedValue({
+        data: { type: 'User' },
+      });
+      mockOctokit.rest.repos.createForAuthenticatedUser.mockResolvedValue({
+        data: {
+          clone_url: 'https://github.com/clone/url.git',
+          html_url: 'https://github.com/html/url',
+        },
+      });
+
+      (fsPromises.readdir as jest.Mock).mockResolvedValue([
+        { name: 'README.md', isDirectory: () => false },
+      ]);
+      (fsPromises.readFile as jest.Mock).mockResolvedValue(
+        Buffer.from('content'),
+      );
+
+      mockOctokit.rest.git.getRef.mockResolvedValue({
+        data: { object: { sha: 'head-sha' } },
+      });
+      mockOctokit.graphql.mockResolvedValue({
+        createCommitOnBranch: { commit: { oid: 'proxy-commit-sha' } },
+      });
+
+      await action.handler({
+        ...mockContext,
+        input: { ...mockContext.input, protectDefaultBranch: false },
+      });
+
+      expect(initRepoAndPush).not.toHaveBeenCalled();
+      expect(mockOctokit.graphql).toHaveBeenCalledWith(
+        expect.stringContaining('createCommitOnBranch'),
+        expect.anything(),
+      );
+      expect(mockContext.output).toHaveBeenCalledWith(
+        'commitHash',
+        'proxy-commit-sha',
+      );
+    } finally {
+      if (originalEnv === undefined) {
+        delete process.env.HTTPS_PROXY;
+      } else {
+        process.env.HTTPS_PROXY = originalEnv;
+      }
+    }
+  });
+
   it('should rethrow non-ECONNRESET errors from git push', async () => {
     const authError = new Error('Authentication failed');
     (authError as NodeJS.ErrnoException).code = 'AuthError';
