@@ -44,6 +44,7 @@ backend.add(import('@backstage/plugin-auth-backend'));
 backend.add(import('./authModuleGithubProvider'));
 backend.add(import('@backstage/plugin-auth-backend-module-guest-provider'));
 backend.add(import('@backstage/plugin-auth-backend-module-openshift-provider'));
+backend.add(import('@backstage/plugin-auth-backend-module-aws-alb-provider'));
 backend.add(import('@backstage/plugin-app-backend'));
 backend.add(import('@backstage/plugin-catalog-backend-module-unprocessed'));
 backend.add(
@@ -68,11 +69,12 @@ backend.add(
   import('@backstage/plugin-catalog-backend-module-backstage-openapi'),
 );
 backend.add(searchLoader);
-backend.add(import('@backstage/plugin-techdocs-backend'));
+// backend.add(import('@backstage/plugin-techdocs-backend'));
 backend.add(import('@backstage/plugin-signals-backend'));
 backend.add(import('@backstage/plugin-notifications-backend'));
 backend.add(rootSystemMetadataServiceFactory);
 
 backend.add(import('@backstage/plugin-events-backend-module-google-pubsub'));
 backend.add(import('@backstage/plugin-mcp-actions-backend'));
+backend.add(import('@backstage/plugin-auth-backend-module-microsoft-provider'));
 backend.start();

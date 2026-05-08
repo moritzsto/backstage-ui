@@ -106,7 +106,7 @@ export class DefaultCatalogProcessingEngine {
     this.stitcher = options.stitcher;
     this.createHash = options.createHash;
     this.pollingIntervalMs = options.pollingIntervalMs ?? 1_000;
-    this.orphanCleanupIntervalMs = options.orphanCleanupIntervalMs ?? 30_000;
+    this.orphanCleanupIntervalMs = options.orphanCleanupIntervalMs ?? this.config.getOptionalNumber('catalog.orphanCleanupIntervalMs') ?? 30_000;
     this.onProcessingError = options.onProcessingError;
     this.tracker = options.tracker ?? progressTracker(options.metrics);
     this.events = options.events;

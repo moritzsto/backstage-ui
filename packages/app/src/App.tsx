@@ -33,23 +33,15 @@ import {
   HeaderWorldClock,
   type ClockConfig,
 } from '@backstage/plugin-home';
-import {
-  techdocsPlugin,
-  TechDocsIndexPage,
-  TechDocsReaderPage,
-  EntityTechdocsContent,
-} from '@backstage/plugin-techdocs';
 import appVisualizerPlugin from '@backstage/plugin-app-visualizer';
 import { convertLegacyAppRoot } from '@backstage/core-compat-api';
 import { FlatRoutes } from '@backstage/core-app-api';
 import { Route } from 'react-router';
 import { CatalogImportPage } from '@backstage/plugin-catalog-import';
 import kubernetesPlugin from '@backstage/plugin-kubernetes/alpha';
-import { convertLegacyPlugin } from '@backstage/core-compat-api';
-import { convertLegacyPageExtension } from '@backstage/core-compat-api';
-import { convertLegacyEntityContentExtension } from '@backstage/plugin-catalog-react/alpha';
 import { pluginInfoResolver } from './pluginInfoResolver';
 import { appModuleNav } from './modules/appModuleNav';
+import { appModuleSignInPage } from './modules/appModuleSignInPage';
 import catalogPlugin from '@backstage/plugin-catalog/alpha';
 import InfoIcon from '@material-ui/icons/Info';
 
@@ -58,18 +50,18 @@ import InfoIcon from '@material-ui/icons/Info';
  * strictly necessary, but it's left here to provide a demo of the utilities for
  * converting legacy plugins.
  */
-const convertedTechdocsPlugin = convertLegacyPlugin(techdocsPlugin, {
-  extensions: [
-    convertLegacyPageExtension(TechDocsIndexPage, {
-      name: 'index',
-      path: '/docs',
-    }),
-    convertLegacyPageExtension(TechDocsReaderPage, {
-      path: '/docs/:namespace/:kind/:name/*',
-    }),
-    convertLegacyEntityContentExtension(EntityTechdocsContent),
-  ],
-});
+// const convertedTechdocsPlugin = convertLegacyPlugin(techdocsPlugin, {
+//   extensions: [
+//     convertLegacyPageExtension(TechDocsIndexPage, {
+//       name: 'index',
+//       path: '/docs',
+//     }),
+//     convertLegacyPageExtension(TechDocsReaderPage, {
+//       path: '/docs/:namespace/:kind/:name/*',
+//     }),
+//     convertLegacyEntityContentExtension(EntityTechdocsContent),
+//   ],
+// });
 
 const clockConfigs: ClockConfig[] = [
   { label: 'NYC', timeZone: 'America/New_York' },
@@ -131,9 +123,10 @@ const collectedLegacyPlugins = convertLegacyAppRoot(
 
 const app = createApp({
   features: [
+    appModuleSignInPage,
     customizedCatalog,
     pagesPlugin,
-    convertedTechdocsPlugin,
+    // convertedTechdocsPlugin,
     userSettingsPlugin,
     homePlugin,
     appVisualizerPlugin,

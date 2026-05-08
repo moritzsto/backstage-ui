@@ -29,8 +29,8 @@ app:
 
   routes:
     bindings:
-      catalog.viewTechDoc: techdocs.docRoot
-      org.catalogIndex: catalog.catalogIndex
+      # catalog.viewTechDoc: techdocs.docRoot
+      # org.catalogIndex: catalog.catalogIndex
 
   pluginOverrides:
     - match:
@@ -135,13 +135,13 @@ app:
           # example overriding the default group
           group: documentation
           icon: kind:api
-    - entity-content:techdocs:
-        config:
-          icon: techdocs
-    - entity-content:kubernetes/kubernetes:
-        config:
-          # example disassociating from the default group
-          group: false
+    # - entity-content:techdocs:
+    #     config:
+    #       icon: techdocs
+    # - entity-content:kubernetes/kubernetes:
+    #     config:
+    #       # example disassociating from the default group
+    #       group: false
     # - entity-content:azure-devops/pipelines
     # - entity-content:azure-devops/pull-requests
     # - entity-content:azure-devops/git-tags
@@ -150,30 +150,18 @@ app:
     - page:catalog-unprocessed-entities: false
 
 backend:
-  # Used for enabling authentication, secret is shared by all backend plugins
-  # See https://backstage.io/docs/auth/service-to-service-auth for
-  # information on the format
-  # auth:
-  #   keys:
-  #     - secret: ${BACKEND_SECRET}
-
-  # Used for testing rate limiting locally
-  # rateLimit:
-  #   windowMs: 1m
-  #   incomingRequestLimit: 1
-  #   ipAllowList: []
-
   auth:
     # TODO: once plugins have been migrated we can remove this, but right now it
     # is require for the backend-next to work in this repo
-    dangerouslyDisableDefaultAuthPolicy: true
+    # dangerouslyDisableDefaultAuthPolicy: true
 
   baseUrl: http://localhost:7007
   listen:
     port: 7007
   database:
     client: better-sqlite3
-    connection: ':memory:'
+    connection:
+      directory: /tmp/backstage
   cors:
     origin: http://localhost:3000
     methods: [GET, HEAD, PATCH, POST, PUT, DELETE]
@@ -207,19 +195,19 @@ organization:
 # Note: After experimenting with basic setup, use CI/CD to generate docs
 # and an external cloud storage when deploying TechDocs for production use-case.
 # https://backstage.io/docs/features/techdocs/how-to-guides#how-to-migrate-from-techdocs-basic-to-recommended-deployment-approach
-techdocs:
-  builder: 'local' # Alternatives - 'external'
-  generator:
-    runIn: 'docker'
-    # dockerImage: my-org/techdocs # use a custom docker image
-    # pullImage: true # or false to disable automatic pulling of image (e.g. if custom docker login is required)
-  publisher:
-    type: 'local' # Alternatives - 'googleGcs' or 'awsS3' or 'azureBlobStorage' or 'openStackSwift'. Read documentation for using alternatives.
+# techdocs:
+#   builder: 'local' # Alternatives - 'external'
+#   generator:
+#     runIn: 'docker'
+#     # dockerImage: my-org/techdocs # use a custom docker image
+#     # pullImage: true # or false to disable automatic pulling of image (e.g. if custom docker login is required)
+#   publisher:
+#     type: 'local' # Alternatives - 'googleGcs' or 'awsS3' or 'azureBlobStorage' or 'openStackSwift'. Read documentation for using alternatives.
 
 integrations:
   github:
-    - host: github.com
-      token: ${GITHUB_TOKEN}
+    # - host: github.com
+    #   token: ${GITHUB_TOKEN}
   ### Example for how to add your GitHub Enterprise instance using the API:
   # - host: ghe.example.net
   #   apiBaseUrl: https://ghe.example.net/api/v3
@@ -228,9 +216,9 @@ integrations:
   # - host: ghe.example.net
   #   rawBaseUrl: https://ghe.example.net/raw
   #   token: ${GHE_TOKEN}
-  gitlab:
-    - host: gitlab.com
-      token: ${GITLAB_TOKEN}
+  # gitlab:
+  #   - host: gitlab.com
+  #     token: ${GITLAB_TOKEN}
   ### Example for how to add a bitbucket cloud integration
   # bitbucketCloud:
   #   # Using API token
@@ -255,16 +243,16 @@ integrations:
   #       clientSecret: ${CLIENT_SECRET}
   #     accountKey: ${ACCOUNT_KEY}
 
-  azure:
-    - host: dev.azure.com
-      token: ${AZURE_TOKEN}
+  # azure:
+  #   - host: dev.azure.com
+  #     token: ${AZURE_TOKEN}
   #  googleGcs:
   #    clientEmail: 'example@example.com'
   #    privateKey: ${GCS_PRIVATE_KEY}
-  awsS3:
-    - endpoint: ${AWS_S3_ENDPOINT}
-      accessKeyId: ${AWS_ACCESS_KEY_ID}
-      secretAccessKey: ${AWS_SECRET_ACCESS_KEY}
+  # awsS3:
+  #   - endpoint: ${AWS_S3_ENDPOINT}
+  #     accessKeyId: ${AWS_ACCESS_KEY_ID}
+  #     secretAccessKey: ${AWS_SECRET_ACCESS_KEY}
 
 catalog:
   import:
@@ -278,6 +266,8 @@ catalog:
         - System
         - Domain
         - Location
+        - User
+        - Group
   providers:
     azureBlob:
       accountName: ${ACCOUNT_NAME}
@@ -314,8 +304,8 @@ catalog:
       rules:
         - allow: [User, Group]
     # Example component for TechDocs
-    - type: file
-      target: ../../plugins/techdocs-backend/examples/documented-component/catalog-info.yaml
+    # - type: file
+    #   target: ../../plugins/techdocs-backend/examples/documented-component/catalog-info.yaml
     # Backstage example templates
     - type: file
       target: ../../plugins/scaffolder-backend/sample-templates/all-templates.yaml
@@ -338,105 +328,113 @@ scaffolder:
       environment: ${NODE_ENV}
 
 auth:
+  visibility: frontend
   experimentalDynamicClientRegistration:
     enabled: true
     allowedRedirectUriPatterns:
       - cursor://*
       - http://localhost:*
       - http://127.0.0.1:*
+      - https://backstage.petersonv.click:*
+      - https://backstage-ad.petersonv.click:*
   experimentalClientIdMetadataDocuments:
     enabled: true
     allowedRedirectUriPatterns:
       - http://127.0.0.1:*
       - http://localhost:*
-
-  ### Add auth.keyStore.provider to more granularly control how to store JWK data when running
-  # the auth-backend.
-  #
-  # keyStore:
-  #  provider: firestore
-  #  firestore:
-  #    projectId: my-project
-  #    path: my-sessions
+      - https://backstage.petersonv.click:*
+      - https://backstage-ad.petersonv.click:*
 
   environment: development
   ### Providing an auth.session.secret will enable session support in the auth-backend
   # session:
   #   secret: custom session secret
   providers:
-    google:
+    guest:
+      dangerouslyAllowOutsideDevelopment: true
+    microsoft:
       development:
-        clientId: ${AUTH_GOOGLE_CLIENT_ID}
-        clientSecret: ${AUTH_GOOGLE_CLIENT_SECRET}
-    github:
-      development:
-        clientId: ${AUTH_GITHUB_CLIENT_ID}
-        clientSecret: ${AUTH_GITHUB_CLIENT_SECRET}
-        enterpriseInstanceUrl: ${AUTH_GITHUB_ENTERPRISE_INSTANCE_URL}
-    gitlab:
-      development:
-        clientId: ${AUTH_GITLAB_CLIENT_ID}
-        clientSecret: ${AUTH_GITLAB_CLIENT_SECRET}
-        audience: ${GITLAB_BASE_URL}
-    saml:
-      entryPoint: 'http://localhost:7001/'
-      issuer: 'passport-saml'
-      cert: 'fake-cert-base64'
-    okta:
-      development:
-        clientId: ${AUTH_OKTA_CLIENT_ID}
-        clientSecret: ${AUTH_OKTA_CLIENT_SECRET}
-        audience: ${AUTH_OKTA_AUDIENCE}
-    oauth2:
-      development:
-        clientId: ${AUTH_OAUTH2_CLIENT_ID}
-        clientSecret: ${AUTH_OAUTH2_CLIENT_SECRET}
-        authorizationUrl: ${AUTH_OAUTH2_AUTH_URL}
-        tokenUrl: ${AUTH_OAUTH2_TOKEN_URL}
+        clientId:
+        clientSecret:
+        tenantId:
+        signIn:
+          resolvers:
+            # See https://backstage.io/docs/auth/microsoft/provider#resolvers for more resolvers
+            - resolver: emailMatchingUserEntityProfileEmail
+    awsalb:
+      issuer: 'https://login.microsoftonline.com/32ea39ae-1ca3-4f2f-824d-3d7ee68cf4da/v2.0'
+      signer: 'arn:aws:elasticloadbalancing:us-east-1:548566065467:loadbalancer/app/backstage-ad/58dee16509a34be4'
+      region: 'us-east-1'
+      signIn:
+        resolvers:
+          - resolver: emailMatchingUserEntityProfileEmail
+    # google:
+    #   development:
+    #     clientId: ${AUTH_GOOGLE_CLIENT_ID}
+    #     clientSecret: ${AUTH_GOOGLE_CLIENT_SECRET}
+    # github:
+    #   development:
+    #     clientId: ${AUTH_GITHUB_CLIENT_ID}
+    #     clientSecret: ${AUTH_GITHUB_CLIENT_SECRET}
+    #     enterpriseInstanceUrl: ${AUTH_GITHUB_ENTERPRISE_INSTANCE_URL}
+    # gitlab:
+    #   development:
+    #     clientId: ${AUTH_GITLAB_CLIENT_ID}
+    #     clientSecret: ${AUTH_GITLAB_CLIENT_SECRET}
+    #     audience: ${GITLAB_BASE_URL}
+    # saml:
+    #   entryPoint: 'http://localhost:7001/'
+    #   issuer: 'passport-saml'
+    #   cert: 'fake-cert-base64'
+    # okta:
+    #   development:
+    #     clientId: ${AUTH_OKTA_CLIENT_ID}
+    #     clientSecret: ${AUTH_OKTA_CLIENT_SECRET}
+    #     audience: ${AUTH_OKTA_AUDIENCE}
+    # oauth2:
+    #   development:
+    #     clientId: ${AUTH_OAUTH2_CLIENT_ID}
+    #     clientSecret: ${AUTH_OAUTH2_CLIENT_SECRET}
+    #     authorizationUrl: ${AUTH_OAUTH2_AUTH_URL}
+    #     tokenUrl: ${AUTH_OAUTH2_TOKEN_URL}
         ###
         # provide a list of scopes as needed for your OAuth2 Server:
         #
         # scope: saml-login-selector openid profile email
-    oidc:
-      # Note that you must define a session secret (see above) since the oidc provider requires session support.
-      # Note that by default, this provider will use the 'none' prompt which assumes that your are already logged on in the IDP.
-      # You should set prompt to:
-      # - auto: will let the IDP decide if you need to log on or if you can skip login when you have an active SSO session
-      # - login: will force the IDP to always present a login form to the user
-      development:
-        metadataUrl: ${AUTH_OIDC_METADATA_URL}
-        clientId: ${AUTH_OIDC_CLIENT_ID}
-        clientSecret: ${AUTH_OIDC_CLIENT_SECRET}
-        tokenEndpointAuthMethod: ${AUTH_OIDC_TOKEN_ENDPOINT_AUTH_METHOD} # default='client_secret_basic'
-        tokenSignedResponseAlg: ${AUTH_OIDC_TOKEN_SIGNED_RESPONSE_ALG} # default='RS256'
-        scope: ${AUTH_OIDC_SCOPE} # default='openid profile email'
-        prompt: ${AUTH_OIDC_PROMPT} # default=none (allowed values: auto, none, consent, login)
-    auth0:
-      development:
-        clientId: ${AUTH_AUTH0_CLIENT_ID}
-        clientSecret: ${AUTH_AUTH0_CLIENT_SECRET}
-        domain: ${AUTH_AUTH0_DOMAIN}
-    microsoft:
-      development:
-        clientId: ${AUTH_MICROSOFT_CLIENT_ID}
-        clientSecret: ${AUTH_MICROSOFT_CLIENT_SECRET}
-        tenantId: ${AUTH_MICROSOFT_TENANT_ID}
-    onelogin:
-      development:
-        clientId: ${AUTH_ONELOGIN_CLIENT_ID}
-        clientSecret: ${AUTH_ONELOGIN_CLIENT_SECRET}
-        issuer: ${AUTH_ONELOGIN_ISSUER}
-    bitbucket:
-      development:
-        clientId: ${AUTH_BITBUCKET_CLIENT_ID}
-        clientSecret: ${AUTH_BITBUCKET_CLIENT_SECRET}
-    atlassian:
-      development:
-        clientId: ${AUTH_ATLASSIAN_CLIENT_ID}
-        clientSecret: ${AUTH_ATLASSIAN_CLIENT_SECRET}
-        scope: ${AUTH_ATLASSIAN_SCOPES}
-    myproxy: {}
-    guest: {}
+    # oidc:
+    #   # Note that you must define a session secret (see above) since the oidc provider requires session support.
+    #   # Note that by default, this provider will use the 'none' prompt which assumes that your are already logged on in the IDP.
+    #   # You should set prompt to:
+    #   # - auto: will let the IDP decide if you need to log on or if you can skip login when you have an active SSO session
+    #   # - login: will force the IDP to always present a login form to the user
+    #   development:
+    #     metadataUrl: ${AUTH_OIDC_METADATA_URL}
+    #     clientId: ${AUTH_OIDC_CLIENT_ID}
+    #     clientSecret: ${AUTH_OIDC_CLIENT_SECRET}
+    #     tokenEndpointAuthMethod: ${AUTH_OIDC_TOKEN_ENDPOINT_AUTH_METHOD} # default='client_secret_basic'
+    #     tokenSignedResponseAlg: ${AUTH_OIDC_TOKEN_SIGNED_RESPONSE_ALG} # default='RS256'
+    #     scope: ${AUTH_OIDC_SCOPE} # default='openid profile email'
+    #     prompt: ${AUTH_OIDC_PROMPT} # default=none (allowed values: auto, none, consent, login)
+    # auth0:
+    #   development:
+    #     clientId: ${AUTH_AUTH0_CLIENT_ID}
+    #     clientSecret: ${AUTH_AUTH0_CLIENT_SECRET}
+    #     domain: ${AUTH_AUTH0_DOMAIN}
+    # onelogin:
+    #   development:
+    #     clientId: ${AUTH_ONELOGIN_CLIENT_ID}
+    #     clientSecret: ${AUTH_ONELOGIN_CLIENT_SECRET}
+    #     issuer: ${AUTH_ONELOGIN_ISSUER}
+    # bitbucket:
+    #   development:
+    #     clientId: ${AUTH_BITBUCKET_CLIENT_ID}
+    #     clientSecret: ${AUTH_BITBUCKET_CLIENT_SECRET}
+    # atlassian:
+    #   development:
+    #     clientId: ${AUTH_ATLASSIAN_CLIENT_ID}
+    #     clientSecret: ${AUTH_ATLASSIAN_CLIENT_SECRET}
+    #     scope: ${AUTH_ATLASSIAN_SCOPES}
+    # myproxy: {}
 
 permission:
   enabled: true

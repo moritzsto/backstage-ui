@@ -74,6 +74,7 @@ import {
 import { CustomizableHomePage } from './components/home/CustomizableHomePage';
 import { HomePage } from './components/home/HomePage';
 import { BuiThemerPage } from '@backstage/plugin-mui-to-bui';
+import { microsoftAuthApiRef } from '@backstage/core-plugin-api';
 
 const app = createApp({
   apis,
@@ -93,7 +94,17 @@ const app = createApp({
       return (
         <SignInPage
           {...props}
-          providers={['guest', 'custom', ...providers]}
+          providers={[
+            'guest',
+            'custom',
+            ...providers,
+            {
+              id: 'microsoft-auth-provider',
+              title: 'Microsoft',
+              message: 'Sign In using Microsoft Azure AD',
+              apiRef: microsoftAuthApiRef,
+            },
+          ]}
           title="Select a sign-in method"
           align="center"
         />

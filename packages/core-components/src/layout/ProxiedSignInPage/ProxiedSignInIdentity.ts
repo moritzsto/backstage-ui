@@ -76,6 +76,8 @@ type State =
 /**
  * An identity API that gets the user auth information solely based on a
  * provider's `/refresh` endpoint.
+ *
+ * @public
  */
 export class ProxiedSignInIdentity implements IdentityApi {
   private readonly options: ProxiedSignInIdentityOptions;

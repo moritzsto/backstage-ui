@@ -16,3 +16,4 @@
 
 export { ProxiedSignInPage } from './ProxiedSignInPage';
 export type { ProxiedSignInPageProps } from './ProxiedSignInPage';
+export { ProxiedSignInIdentity } from './ProxiedSignInIdentity';

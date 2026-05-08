@@ -1,0 +1,10 @@
+app:
+  title: Deployed Backstage
+  baseUrl: https://backstage.petersonv.click
+
+backend:
+  baseUrl: https://backstage.petersonv.click
+  cors:
+    origin: https://backstage.petersonv.click
+    methods: [GET, HEAD, PATCH, POST, PUT, DELETE]
+    credentials: true

@@ -35,7 +35,7 @@ USER node
 
 
 # This switches many Node.js dependencies to production mode.
-ENV NODE_ENV=production
+# ENV NODE_ENV=production
 
 # Copy over Yarn 3 configuration, release, and plugins
 COPY --chown=node:node .yarn ./.yarn
@@ -47,11 +47,11 @@ COPY --chown=node:node .yarnrc.yml ./
 COPY --chown=node:node yarn.lock package.json packages/backend/dist/skeleton.tar.gz ./
 RUN tar xzf skeleton.tar.gz && rm skeleton.tar.gz
 
-RUN --mount=type=cache,target=/home/node/.yarn/berry/cache,sharing=locked,uid=1000,gid=1000 \
+RUN --mount=type=cache,target=/home/node/.yarn/berry,sharing=locked,uid=1000,gid=1000 \
     yarn workspaces focus --all --production
 
 # Then copy the rest of the backend bundle, along with any other files we might want.
 COPY --chown=node:node packages/backend/dist/bundle.tar.gz app-config*.yaml ./
 RUN tar xzf bundle.tar.gz && rm bundle.tar.gz
 
-CMD ["node", "packages/backend", "--config", "app-config.yaml"]
+CMD ["node", "packages/backend", "--config", "app-config.yaml", "--config", "app-config.production.yaml"]
