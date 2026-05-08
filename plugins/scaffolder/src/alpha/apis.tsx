@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 The Backstage Authors
+ * Copyright 2023 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,19 @@
 
 import {
   ApiBlueprint,
+  discoveryApiRef,
+  fetchApiRef,
+  identityApiRef,
   appTreeApiRef,
   createExtensionInput,
 } from '@backstage/frontend-plugin-api';
+import { scmIntegrationsApiRef } from '@backstage/integration-react';
+import { scaffolderApiRef } from '@backstage/plugin-scaffolder-react';
 import {
   FormFieldBlueprint,
   formFieldsApiRef,
 } from '@backstage/plugin-scaffolder-react/alpha';
+import { ScaffolderClient } from '../api';
 import { OpaqueFormField } from '@internal/scaffolder';
 
 export const formFieldsApi = ApiBlueprint.makeWithOverrides({
@@ -77,7 +83,29 @@ function getPageFormFieldLoaders(appTreeApi: typeof appTreeApiRef.T) {
   });
 }
 
+export const scaffolderApi = ApiBlueprint.make({
+  params: defineParams =>
+    defineParams({
+      api: scaffolderApiRef,
+      deps: {
+        discoveryApi: discoveryApiRef,
+        scmIntegrationsApi: scmIntegrationsApiRef,
+        fetchApi: fetchApiRef,
+        identityApi: identityApiRef,
+      },
+      factory: ({ discoveryApi, scmIntegrationsApi, fetchApi, identityApi }) =>
+        new ScaffolderClient({
+          discoveryApi,
+          scmIntegrationsApi,
+          fetchApi,
+          identityApi,
+        }),
+    }),
+});
+
 export {
   formFieldsApiRef,
   type ScaffolderFormFieldsApi,
 } from '@backstage/plugin-scaffolder-react/alpha';
+
+export default [formFieldsApi, scaffolderApi];

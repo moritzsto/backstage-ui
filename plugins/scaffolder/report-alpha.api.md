@@ -17,13 +17,13 @@ import { ExternalRouteRef } from '@backstage/core-plugin-api';
 import { FieldExtensionOptions } from '@backstage/plugin-scaffolder-react';
 import { FilterPredicate } from '@backstage/filter-predicates';
 import { FormField } from '@backstage/plugin-scaffolder-react/alpha';
-import { formFieldsApiRef } from '@backstage/plugin-scaffolder-react/alpha';
-import type { FormProps as FormProps_2 } from '@rjsf/core';
-import { FormProps as FormProps_3 } from '@backstage/plugin-scaffolder-react';
+import { FormProps as FormProps_2 } from '@backstage/plugin-scaffolder-react';
+import type { FormProps as FormProps_3 } from '@rjsf/core';
 import { IconComponent } from '@backstage/frontend-plugin-api';
 import { IconElement } from '@backstage/frontend-plugin-api';
 import { IconLinkVerticalProps } from '@backstage/core-components';
-import { JSX as JSX_2 } from 'react';
+import { JSX as JSX_2 } from 'react/jsx-runtime';
+import { JSX as JSX_3 } from 'react';
 import { LayoutOptions } from '@backstage/plugin-scaffolder-react';
 import { OverridableExtensionDefinition } from '@backstage/frontend-plugin-api';
 import { OverridableFrontendPlugin } from '@backstage/frontend-plugin-api';
@@ -32,7 +32,6 @@ import { ReviewStepProps } from '@backstage/plugin-scaffolder-react';
 import { RouteRef } from '@backstage/core-plugin-api';
 import { RouteRef as RouteRef_2 } from '@backstage/frontend-plugin-api';
 import { ScaffolderFormDecorator } from '@backstage/plugin-scaffolder-react/alpha';
-import { ScaffolderFormFieldsApi } from '@backstage/plugin-scaffolder-react/alpha';
 import { SubRouteRef } from '@backstage/core-plugin-api';
 import { TemplateEntityV1beta3 } from '@backstage/plugin-scaffolder-common';
 import { TemplateGroupFilter } from '@backstage/plugin-scaffolder-react';
@@ -216,7 +215,7 @@ const _default: OverridableFrontendPlugin<
               optional: true;
             }
           >
-        | ExtensionDataRef<JSX_2.Element, 'core.reactElement', {}>
+        | ExtensionDataRef<JSX_3.Element, 'core.reactElement', {}>
         | ExtensionDataRef<
             string,
             'core.title',
@@ -233,7 +232,7 @@ const _default: OverridableFrontendPlugin<
           >;
       inputs: {
         pages: ExtensionInput<
-          | ConfigurableExtensionDataRef<JSX_2.Element, 'core.reactElement', {}>
+          | ConfigurableExtensionDataRef<JSX_3.Element, 'core.reactElement', {}>
           | ConfigurableExtensionDataRef<string, 'core.routing.path', {}>
           | ConfigurableExtensionDataRef<
               RouteRef_2<AnyRouteRefParams>,
@@ -281,9 +280,79 @@ const _default: OverridableFrontendPlugin<
         path: string;
         title?: string;
         icon?: IconElement;
-        loader?: () => Promise<JSX_2.Element>;
+        loader?: () => Promise<JSX_3.Element>;
         routeRef?: RouteRef_2;
         noHeader?: boolean;
+      };
+    }>;
+    'scaffolder-filter:scaffolder/category': OverridableExtensionDefinition<{
+      kind: 'scaffolder-filter';
+      name: 'category';
+      config: {};
+      configInput: {};
+      output: ExtensionDataRef<JSX_3.Element, 'core.reactElement', {}>;
+      inputs: {};
+      params: {
+        loader: () => Promise<JSX.Element>;
+      };
+    }>;
+    'scaffolder-filter:scaffolder/owner': OverridableExtensionDefinition<{
+      kind: 'scaffolder-filter';
+      name: 'owner';
+      config: {};
+      configInput: {};
+      output: ExtensionDataRef<JSX_3.Element, 'core.reactElement', {}>;
+      inputs: {};
+      params: {
+        loader: () => Promise<JSX.Element>;
+      };
+    }>;
+    'scaffolder-filter:scaffolder/searchbar': OverridableExtensionDefinition<{
+      kind: 'scaffolder-filter';
+      name: 'searchbar';
+      config: {};
+      configInput: {};
+      output: ExtensionDataRef<JSX_3.Element, 'core.reactElement', {}>;
+      inputs: {};
+      params: {
+        loader: () => Promise<JSX.Element>;
+      };
+    }>;
+    'scaffolder-filter:scaffolder/tag': OverridableExtensionDefinition<{
+      kind: 'scaffolder-filter';
+      name: 'tag';
+      config: {};
+      configInput: {};
+      output: ExtensionDataRef<JSX_3.Element, 'core.reactElement', {}>;
+      inputs: {};
+      params: {
+        loader: () => Promise<JSX.Element>;
+      };
+    }>;
+    'scaffolder-filter:scaffolder/template-kind': OverridableExtensionDefinition<{
+      kind: 'scaffolder-filter';
+      name: 'template-kind';
+      config: {};
+      configInput: {};
+      output: ExtensionDataRef<JSX_3.Element, 'core.reactElement', {}>;
+      inputs: {};
+      params: {
+        loader: () => Promise<JSX.Element>;
+      };
+    }>;
+    'scaffolder-filter:scaffolder/user-list': OverridableExtensionDefinition<{
+      config: {
+        initialFilter: 'all' | 'starred';
+      };
+      configInput: {
+        initialFilter?: 'all' | 'starred' | undefined;
+      };
+      output: ExtensionDataRef<JSX_3.Element, 'core.reactElement', {}>;
+      inputs: {};
+      kind: 'scaffolder-filter';
+      name: 'user-list';
+      params: {
+        loader: () => Promise<JSX.Element>;
       };
     }>;
     'scaffolder-form-field:scaffolder/entity-name-picker': OverridableExtensionDefinition<{
@@ -456,7 +525,7 @@ const _default: OverridableFrontendPlugin<
               optional: true;
             }
           >
-        | ExtensionDataRef<JSX_2.Element, 'core.reactElement', {}>
+        | ExtensionDataRef<JSX_3.Element, 'core.reactElement', {}>
         | ExtensionDataRef<string, 'core.title', {}>
         | ExtensionDataRef<
             IconElement,
@@ -494,7 +563,7 @@ const _default: OverridableFrontendPlugin<
               optional: true;
             }
           >
-        | ExtensionDataRef<JSX_2.Element, 'core.reactElement', {}>
+        | ExtensionDataRef<JSX_3.Element, 'core.reactElement', {}>
         | ExtensionDataRef<string, 'core.title', {}>
         | ExtensionDataRef<
             IconElement,
@@ -532,7 +601,7 @@ const _default: OverridableFrontendPlugin<
               optional: true;
             }
           >
-        | ExtensionDataRef<JSX_2.Element, 'core.reactElement', {}>
+        | ExtensionDataRef<JSX_3.Element, 'core.reactElement', {}>
         | ExtensionDataRef<string, 'core.title', {}>
         | ExtensionDataRef<
             IconElement,
@@ -568,7 +637,7 @@ const _default: OverridableFrontendPlugin<
               optional: true;
             }
           >
-        | ExtensionDataRef<JSX_2.Element, 'core.reactElement', {}>
+        | ExtensionDataRef<JSX_3.Element, 'core.reactElement', {}>
         | ExtensionDataRef<string, 'core.title', {}>
         | ExtensionDataRef<
             IconElement,
@@ -577,7 +646,28 @@ const _default: OverridableFrontendPlugin<
               optional: true;
             }
           >;
-      inputs: {};
+      inputs: {
+        filters: ExtensionInput<
+          ConfigurableExtensionDataRef<JSX_3.Element, 'core.reactElement', {}>,
+          {
+            singleton: false;
+            optional: false;
+            internal: false;
+          }
+        >;
+        groups: ExtensionInput<
+          ConfigurableExtensionDataRef<
+            TemplateGroupFilter,
+            'scaffolder.group-filter',
+            {}
+          >,
+          {
+            singleton: false;
+            optional: false;
+            internal: false;
+          }
+        >;
+      };
       kind: 'sub-page';
       name: 'templates';
       params: {
@@ -608,7 +698,7 @@ const _default: OverridableFrontendPlugin<
               optional: true;
             }
           >
-        | ExtensionDataRef<JSX_2.Element, 'core.reactElement', {}>
+        | ExtensionDataRef<JSX_3.Element, 'core.reactElement', {}>
         | ExtensionDataRef<string, 'core.title', {}>
         | ExtensionDataRef<
             IconElement,
@@ -677,11 +767,9 @@ export const formDecoratorsApiRef: ApiRef<ScaffolderFormDecoratorsApi> & {
   readonly $$type: '@backstage/ApiRef';
 };
 
-export { formFieldsApiRef };
-
 // @alpha @deprecated
 export type FormProps = Pick<
-  FormProps_2,
+  FormProps_3,
   'transformErrors' | 'noHtml5Validate'
 >;
 
@@ -697,8 +785,6 @@ export interface ScaffolderFormDecoratorsApi {
   // (undocumented)
   getFormDecorators(): Promise<ScaffolderFormDecorator[]>;
 }
-
-export { ScaffolderFormFieldsApi };
 
 // @public (undocumented)
 export type ScaffolderTemplateEditorClassKey =
@@ -906,6 +992,9 @@ export const scaffolderTranslationRef: TranslationRef<
 >;
 
 // @alpha (undocumented)
+export const TemplateListPage: (props: TemplateListPageProps) => JSX_2.Element;
+
+// @alpha (undocumented)
 export type TemplateListPageProps = {
   TemplateCardComponent?: ComponentType<{
     template: TemplateEntityV1beta3;
@@ -925,6 +1014,16 @@ export type TemplateListPageProps = {
   };
 };
 
+// @alpha
+export function TemplateWizardPage(
+  props: TemplateWizardPageProps,
+): JSX_2.Element;
+
+// @alpha
+export function TemplateWizardPageContent(
+  props: TemplateWizardPageProps,
+): JSX_2.Element;
+
 // @alpha (undocumented)
 export type TemplateWizardPageProps = {
   customFieldExtensions: FieldExtensionOptions<any, any>[];
@@ -932,7 +1031,7 @@ export type TemplateWizardPageProps = {
     ReviewStepComponent?: ComponentType<ReviewStepProps>;
   };
   layouts?: LayoutOptions[];
-  formProps?: FormProps_3;
+  formProps?: FormProps_2;
   headerOptions?: {
     pageTitleOverride?: string;
     title?: string;

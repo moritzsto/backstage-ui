@@ -151,9 +151,9 @@ function useTemplateWizard(_props: TemplateWizardPageProps) {
  * Content-only version of the template wizard, for use within the NFS page layout
  * where the header is provided by the framework.
  *
- * @internal
+ * @alpha
  */
-export const TemplateWizardPageContent = (props: TemplateWizardPageProps) => {
+export function TemplateWizardPageContent(props: TemplateWizardPageProps) {
   const {
     templateRef,
     templateName,
@@ -178,9 +178,15 @@ export const TemplateWizardPageContent = (props: TemplateWizardPageProps) => {
       />
     </AnalyticsContext>
   );
-};
+}
 
-export const TemplateWizardPage = (props: TemplateWizardPageProps) => {
+/**
+ * Template wizard, for use within the NFS page layout
+ * where the header is provided by the page itself.
+ *
+ * @alpha
+ */
+export function TemplateWizardPage(props: TemplateWizardPageProps) {
   const {
     templateRef,
     templateName,
@@ -224,4 +230,4 @@ export const TemplateWizardPage = (props: TemplateWizardPageProps) => {
       </Page>
     </AnalyticsContext>
   );
-};
+}
