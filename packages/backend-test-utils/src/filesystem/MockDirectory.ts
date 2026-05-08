@@ -409,55 +409,20 @@ registerTestHooks();
  *
  * Multiple `createMockDirectory` calls are fine when a test file genuinely needs
  * distinct directory categories at the same time, for example a source and an output
- * directory. Do not call `createMockDirectory` once per test case — this creates
+ * directory. Do not call `createMockDirectory` once per test case as this creates
  * unnecessary temporary directories and slows down the test suite.
  *
  * @example
- *
- * Recommended: one mock directory with per-test content.
- *
  * ```ts
  * describe('MySubject', () => {
  *   const mockDir = createMockDirectory();
  *
  *   beforeEach(mockDir.clear);
  *
- *   it('should read files', () => {
- *     mockDir.setContent({
- *       'input/data.json': '{}',
- *     });
- *     // ... test reading
- *   });
- *
- *   it('should write files', () => {
- *     mockDir.setContent({
- *       'workspace/existing.txt': 'hello',
- *     });
- *     // ... test writing
- *   });
- * });
- * ```
- *
- * @example
- *
- * Acceptable: separate directories for genuinely distinct categories.
- *
- * ```ts
- * describe('copy', () => {
- *   const sourceDir = createMockDirectory();
- *   const outputDir = createMockDirectory();
- *
- *   beforeEach(() => {
- *     sourceDir.clear();
- *     outputDir.clear();
- *   });
- *
- *   it('should copy files', () => {
- *     sourceDir.setContent({ 'a.txt': 'hello' });
- *     copyFiles(sourceDir.path, outputDir.path);
- *     expect(outputDir.content()).toEqual({ 'a.txt': 'hello' });
- *   });
- * });
+ *   it('should work', () => {
+ *     // ... use mockDir
+ *   })
+ * })
  * ```
  */
 export function createMockDirectory(
