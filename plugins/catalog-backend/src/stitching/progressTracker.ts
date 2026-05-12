@@ -46,6 +46,11 @@ export function progressTracker(
     {
       description: 'Time spent executing the full stitching flow',
       unit: 'seconds',
+      advice: {
+        explicitBucketBoundaries: [
+          0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60,
+        ],
+      },
     },
   );
 
@@ -66,6 +71,11 @@ export function progressTracker(
       description:
         'The amount of delay between being scheduled for stitching, and the start of actually being stitched',
       unit: 'seconds',
+      advice: {
+        explicitBucketBoundaries: [
+          0.1, 0.5, 1, 5, 10, 30, 60, 300, 600, 1800, 3600,
+        ],
+      },
     },
   );
 

@@ -422,6 +422,11 @@ function progressTracker(metrics: MetricsService) {
     {
       description: 'Time spent executing the full processing flow',
       unit: 'seconds',
+      advice: {
+        explicitBucketBoundaries: [
+          0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60,
+        ],
+      },
     },
   );
 
@@ -430,6 +435,11 @@ function progressTracker(metrics: MetricsService) {
     {
       description: 'Time spent executing catalog processors',
       unit: 'seconds',
+      advice: {
+        explicitBucketBoundaries: [
+          0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60,
+        ],
+      },
     },
   );
 
@@ -439,6 +449,11 @@ function progressTracker(metrics: MetricsService) {
       description:
         'The amount of delay between being scheduled for processing, and the start of actually being processed',
       unit: 'seconds',
+      advice: {
+        explicitBucketBoundaries: [
+          0.1, 0.5, 1, 5, 10, 30, 60, 300, 600, 1800, 3600,
+        ],
+      },
     },
   );
 
