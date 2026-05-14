@@ -47,6 +47,7 @@ export const connectionsServiceFactory = createServiceFactory({
   },
 
   async factory({ logger, pluginMetadata }, connectionsService) {
-    return connectionsService.forPlugin(pluginMetadata.getId(), { logger });
+    const pluginId = pluginMetadata.getId();
+    return connectionsService.forPlugin(pluginId, { logger });
   },
 });

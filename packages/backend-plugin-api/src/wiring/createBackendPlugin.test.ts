@@ -38,6 +38,7 @@ describe('createBackendPlugin', () => {
         type: 'plugin-v1.1',
         pluginId: 'x',
         extensionPoints: [],
+        connections: [],
         init: {
           deps: expect.any(Object),
           func: expect.any(Function),
@@ -91,6 +92,65 @@ describe('createBackendPlugin', () => {
 
     expect(plugin.$$type).toEqual('@backstage/BackendFeature');
   });
+  it('captures connection registrations and rejects duplicates or late calls', () => {
+    const plugin = createBackendPlugin({
+      pluginId: 'x',
+      register(r) {
+        r.registerConnection({
+          type: 'github',
+          required: true,
+          description: 'used by x',
+        });
+        r.registerConnection({ type: 'gitlab' });
+        r.registerInit({ deps: {}, async init() {} });
+      },
+    });
+    const [{ connections }] = (
+      plugin as unknown as InternalBackendRegistrations
+    ).getRegistrations() as Array<{ connections: unknown }>;
+    expect(connections).toEqual([
+      { type: 'github', required: true, description: 'used by x' },
+      { type: 'gitlab' },
+    ]);
+
+    expect(
+      () =>
+        createBackendPlugin({
+          pluginId: 'x',
+          register(r) {
+            r.registerConnection({ type: 'github' });
+            r.registerConnection({ type: 'github' });
+            r.registerInit({ deps: {}, async init() {} });
+          },
+        }).$$type,
+    ).toBeDefined();
+
+    expect(() =>
+      (
+        createBackendPlugin({
+          pluginId: 'x',
+          register(r) {
+            r.registerConnection({ type: 'github' });
+            r.registerConnection({ type: 'github' });
+            r.registerInit({ deps: {}, async init() {} });
+          },
+        }) as unknown as InternalBackendRegistrations
+      ).getRegistrations(),
+    ).toThrow(/Duplicate connection registration for type 'github'/);
+
+    expect(() =>
+      (
+        createBackendPlugin({
+          pluginId: 'x',
+          register(r) {
+            r.registerInit({ deps: {}, async init() {} });
+            r.registerConnection({ type: 'github' });
+          },
+        }) as unknown as InternalBackendRegistrations
+      ).getRegistrations(),
+    ).toThrow(/registerConnection called after registerInit/);
+  });
+
   it('should reject plugins with invalid pluginId', async () => {
     expect(() =>
       createBackendPlugin({

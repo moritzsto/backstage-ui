@@ -18,6 +18,7 @@ import { BackendFeature } from '../types';
 import { ID_PATTERN, ID_PATTERN_OLD } from './constants';
 import {
   BackendModuleRegistrationPoints,
+  ConnectionRegistration,
   ExtensionPoint,
   ExtensionPointFactoryContext,
   InternalBackendModuleRegistrationV1_1,
@@ -70,6 +71,7 @@ export function createBackendModule(
   function getRegistrations() {
     const extensionPoints: InternalBackendModuleRegistrationV1_1['extensionPoints'] =
       [];
+    const connections: ConnectionRegistration[] = [];
     let init: InternalBackendModuleRegistrationV1_1['init'] | undefined =
       undefined;
 
@@ -106,6 +108,17 @@ export function createBackendModule(
           });
         }
       },
+      registerConnection(registration) {
+        if (init) {
+          throw new Error('registerConnection called after registerInit');
+        }
+        if (connections.some(c => c.type === registration.type)) {
+          throw new Error(
+            `Duplicate connection registration for type '${registration.type}' in module '${options.moduleId}' for plugin '${options.pluginId}'`,
+          );
+        }
+        connections.push({ ...registration });
+      },
       registerInit(regInit) {
         if (init) {
           throw new Error('registerInit must only be called once');
@@ -129,6 +142,7 @@ export function createBackendModule(
         pluginId: options.pluginId,
         moduleId: options.moduleId,
         extensionPoints,
+        connections,
         init,
       },
     ];

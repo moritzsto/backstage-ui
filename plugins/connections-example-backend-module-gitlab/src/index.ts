@@ -13,7 +13,4 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-export type { ConnectionsService } from './ConnectionsService';
-export { DefaultConnectionsService } from './DefaultConnectionService';
-export { withDeclaredConnections } from './withDeclaredConnections';
+export { connectionsExampleBackendModuleGitlab as default } from './module';

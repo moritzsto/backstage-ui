@@ -17,6 +17,7 @@
 import { BackendFeature } from '../types';
 import {
   BackendPluginRegistrationPoints,
+  ConnectionRegistration,
   ExtensionPoint,
   ExtensionPointFactoryContext,
   InternalBackendPluginRegistrationV1_1,
@@ -65,6 +66,7 @@ export function createBackendPlugin(
   function getRegistrations() {
     const extensionPoints: InternalBackendPluginRegistrationV1_1['extensionPoints'] =
       [];
+    const connections: ConnectionRegistration[] = [];
     let init: InternalBackendPluginRegistrationV1_1['init'] | undefined =
       undefined;
 
@@ -101,6 +103,17 @@ export function createBackendPlugin(
           });
         }
       },
+      registerConnection(registration) {
+        if (init) {
+          throw new Error('registerConnection called after registerInit');
+        }
+        if (connections.some(c => c.type === registration.type)) {
+          throw new Error(
+            `Duplicate connection registration for type '${registration.type}' in plugin '${options.pluginId}'`,
+          );
+        }
+        connections.push({ ...registration });
+      },
       registerInit(regInit) {
         if (init) {
           throw new Error('registerInit must only be called once');
@@ -123,6 +136,7 @@ export function createBackendPlugin(
         type: 'plugin-v1.1',
         pluginId: options.pluginId,
         extensionPoints,
+        connections,
         init,
       },
     ];

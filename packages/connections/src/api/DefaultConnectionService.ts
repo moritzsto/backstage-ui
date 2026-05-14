@@ -45,11 +45,7 @@ class PluginConnectionsService implements ConnectionsService {
   private readonly logger: LoggerService;
   private readonly connections: Connection[];
 
-  constructor(
-    _pluginId: string,
-    logger: LoggerService,
-    connections: Connection[],
-  ) {
+  constructor(logger: LoggerService, connections: Connection[]) {
     this.logger = logger;
     this.connections = connections;
   }
@@ -86,7 +82,6 @@ class PluginConnectionsService implements ConnectionsService {
     this.logger.debug(
       `Finding connection of type "${type}" matching url "${url}"`,
     );
-
     let host: string;
     try {
       host = new URL(url).host;
@@ -273,7 +268,6 @@ export class DefaultConnectionsService {
   ): ConnectionsService {
     const logger = options?.logger ?? this.logger;
     return new PluginConnectionsService(
-      pluginId,
       logger,
       this.#getConnectionsForPlugin(pluginId),
     );

@@ -15,43 +15,42 @@
  */
 import {
   coreServices,
-  createBackendPlugin,
+  createBackendModule,
 } from '@backstage/backend-plugin-api';
-import { createRouter } from './router';
-
 import { connectionsServiceRef } from '@backstage/connections';
 
 /**
- * connectionsExampleBackendPlugin backend plugin
+ * A module for the connections-example-backend plugin that registers and
+ * uses GitLab connections.
  *
  * @public
  */
-export const connectionsExampleBackendPlugin = createBackendPlugin({
+export const connectionsExampleBackendModuleGitlab = createBackendModule({
   pluginId: 'connections-example-backend',
+  moduleId: 'gitlab',
   register(env) {
     env.registerConnection({
-      type: 'github',
-      description: 'Used by the example /find endpoint to look up GitHub hosts',
-    });
-    env.registerConnection({
       type: 'gitlab',
-      description: 'Used by the example /find endpoint to look up GitLab hosts',
+      description:
+        'Used by the gitlab module to look up GitLab hosts via the connections service',
     });
     env.registerInit({
       deps: {
-        httpAuth: coreServices.httpAuth,
-        httpRouter: coreServices.httpRouter,
         logger: coreServices.logger,
         connections: connectionsServiceRef,
       },
-      async init({ httpAuth, httpRouter, connections, logger }) {
-        httpRouter.use(
-          await createRouter({
-            httpAuth,
-            connections,
-            logger,
-          }),
-        );
+      async init({ logger, connections }) {
+        logger.info('GitLab connections module initialized');
+        const connection = await connections.findOptional({
+          type: 'gitlab',
+          url: 'https://gitlab.com',
+          authMethods: ['token'],
+        });
+        if (connection) {
+          logger.info(`Found GitLab connection for host ${connection.host}`);
+        } else {
+          logger.info('No GitLab connection configured');
+        }
       },
     });
   },
