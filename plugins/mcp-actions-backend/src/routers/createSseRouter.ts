@@ -18,11 +18,7 @@ import { Router } from 'express';
 import { McpService } from '../services/McpService';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { TracingService } from '@backstage/backend-plugin-api/alpha';
-import {
-  AuditorService,
-  AuditorServiceEvent,
-  HttpAuthService,
-} from '@backstage/backend-plugin-api';
+import { AuditorService, HttpAuthService } from '@backstage/backend-plugin-api';
 import { McpServerConfig } from '../config';
 
 /**
@@ -45,7 +41,7 @@ export const createSseRouter = ({
   const transportsToSessionId = new Map<string, SSEServerTransport>();
 
   router.get('/', async (req, res) => {
-    let connectionEvent: AuditorServiceEvent;
+    let connectionEvent;
     try {
       connectionEvent = await auditor.createEvent({
         eventId: 'connection',
@@ -53,7 +49,7 @@ export const createSseRouter = ({
         meta: { transport: 'sse', actionType: 'established' },
       });
     } catch {
-      // Make audit logging best-effort: fall back to a no-op event if auditing is unavailable.
+      // best-effort
       connectionEvent = { success: async () => {}, fail: async () => {} };
     }
 
@@ -71,16 +67,18 @@ export const createSseRouter = ({
 
       transportsToSessionId.set(transport.sessionId, transport);
 
-      res.on('close', () => {
+      res.on('close', async () => {
         transportsToSessionId.delete(transport.sessionId);
-        auditor
-          .createEvent({
+        try {
+          const e = await auditor.createEvent({
             eventId: 'connection',
             request: req,
             meta: { transport: 'sse', actionType: 'closed' },
-          })
-          .then(e => e.success())
-          .catch(() => {});
+          });
+          await e.success();
+        } catch {
+          // best-effort
+        }
       });
 
       await server.connect(transport);
@@ -94,7 +92,11 @@ export const createSseRouter = ({
                 ? error
                 : 'Unknown error during SSE connection',
             );
-      await connectionEvent.fail({ error: normalizedError }).catch(() => {});
+      try {
+        await connectionEvent.fail({ error: normalizedError });
+      } catch {
+        // best-effort
+      }
       throw error;
     }
   });

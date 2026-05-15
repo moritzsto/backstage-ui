@@ -25,7 +25,6 @@ import {
 } from '@backstage/backend-plugin-api/alpha';
 import {
   AuditorService,
-  AuditorServiceEvent,
   HttpAuthService,
   LoggerService,
 } from '@backstage/backend-plugin-api';
@@ -71,7 +70,7 @@ export const createStreamableRouter = ({
       'network.protocol.name': 'http',
     };
 
-    let connectionEvent: AuditorServiceEvent;
+    let connectionEvent;
     try {
       connectionEvent = await auditor.createEvent({
         eventId: 'connection',
@@ -79,7 +78,7 @@ export const createStreamableRouter = ({
         meta: { transport: 'streamable', actionType: 'established' },
       });
     } catch {
-      // Make audit logging best-effort: fall back to a no-op event if auditing is unavailable.
+      // best-effort
       connectionEvent = { success: async () => {}, fail: async () => {} };
     }
 
@@ -106,9 +105,13 @@ export const createStreamableRouter = ({
         transport.handleRequest(req, res, req.body),
       );
 
-      await connectionEvent.success().catch(() => {});
+      try {
+        await connectionEvent.success();
+      } catch {
+        // best-effort
+      }
 
-      res.on('close', () => {
+      res.on('close', async () => {
         transport.close();
         server.close();
 
@@ -116,14 +119,16 @@ export const createStreamableRouter = ({
 
         sessionDuration.record(durationSeconds, baseAttributes);
 
-        auditor
-          .createEvent({
+        try {
+          const e = await auditor.createEvent({
             eventId: 'connection',
             request: req,
             meta: { transport: 'streamable', actionType: 'closed' },
-          })
-          .then(e => e.success())
-          .catch(() => {});
+          });
+          await e.success();
+        } catch {
+          // best-effort
+        }
       });
     } catch (error) {
       const err = toError(error);
@@ -149,11 +154,13 @@ export const createStreamableRouter = ({
         'error.type': errorType,
       });
 
-      await connectionEvent
-        .fail({
+      try {
+        await connectionEvent.fail({
           error: error instanceof Error ? error : new Error(String(error)),
-        })
-        .catch(() => {});
+        });
+      } catch {
+        // best-effort
+      }
     }
   });
 
