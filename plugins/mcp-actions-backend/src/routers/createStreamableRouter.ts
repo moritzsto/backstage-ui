@@ -25,6 +25,7 @@ import {
 } from '@backstage/backend-plugin-api/alpha';
 import {
   AuditorService,
+  AuditorServiceEvent,
   HttpAuthService,
   LoggerService,
 } from '@backstage/backend-plugin-api';
@@ -70,7 +71,7 @@ export const createStreamableRouter = ({
       'network.protocol.name': 'http',
     };
 
-    let connectionEvent;
+    let connectionEvent: AuditorServiceEvent;
     try {
       connectionEvent = await auditor.createEvent({
         eventId: 'connection',

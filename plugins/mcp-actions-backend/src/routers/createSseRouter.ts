@@ -18,7 +18,11 @@ import { Router } from 'express';
 import { McpService } from '../services/McpService';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { TracingService } from '@backstage/backend-plugin-api/alpha';
-import { AuditorService, HttpAuthService } from '@backstage/backend-plugin-api';
+import {
+  AuditorService,
+  AuditorServiceEvent,
+  HttpAuthService,
+} from '@backstage/backend-plugin-api';
 import { McpServerConfig } from '../config';
 
 /**
@@ -41,7 +45,7 @@ export const createSseRouter = ({
   const transportsToSessionId = new Map<string, SSEServerTransport>();
 
   router.get('/', async (req, res) => {
-    let connectionEvent;
+    let connectionEvent: AuditorServiceEvent;
     try {
       connectionEvent = await auditor.createEvent({
         eventId: 'connection',
