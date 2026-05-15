@@ -217,6 +217,28 @@ export class BackendInitializer {
   #registeredFeatureLoaders = new Array<InternalBackendFeatureLoader>();
   #extensionPointFactoryMiddleware: ExtensionPointFactoryMiddleware[];
   #callerConnectionRegistrations = new Map<string, ConnectionRegistration[]>();
+
+  #getConnectionRegistrations(
+    pluginId: string,
+    moduleId?: string,
+  ): ConnectionRegistration[] {
+    if (moduleId) {
+      return (
+        this.#callerConnectionRegistrations.get(
+          callerKey(pluginId, moduleId),
+        ) ?? []
+      );
+    }
+    // For plugins, aggregate registrations from the plugin itself and all its modules
+    const result: ConnectionRegistration[] = [];
+    for (const [key, registrations] of this.#callerConnectionRegistrations) {
+      if (key === pluginId || key.startsWith(`${pluginId}\0`)) {
+        result.push(...registrations);
+      }
+    }
+    return result;
+  }
+
   #unhandledRejectionHandler?: (reason: Error) => void;
   #uncaughtExceptionHandler?: (error: Error) => void;
 
@@ -270,9 +292,10 @@ export class BackendInitializer {
         );
         if (impl) {
           if (ref.id === connectionsServiceRef.id) {
-            const key = callerKey(pluginId, moduleId);
-            const registrations =
-              this.#callerConnectionRegistrations.get(key) ?? [];
+            const registrations = this.#getConnectionRegistrations(
+              pluginId,
+              moduleId,
+            );
             result.set(
               name,
               withDeclaredConnections(
