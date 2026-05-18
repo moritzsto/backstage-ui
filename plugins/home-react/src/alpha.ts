@@ -33,6 +33,9 @@ export const homeReactTranslationRef = _homeReactTranslationRef;
 export {
   HomePageWidgetBlueprint,
   type HomePageWidgetBlueprintParams,
+  type HomePageWidgetBaseParams,
+  type HomePageCardWidgetParams,
+  type HomePageBasicWidgetParams,
 } from './alpha/blueprints/HomePageWidgetBlueprint';
 export {
   HomePageLayoutBlueprint,
@@ -43,5 +46,12 @@ export {
   type HomePageWidgetData,
   homePageLayoutComponentDataRef,
   type HomePageLayoutProps,
+  type LayoutConfiguration,
 } from './alpha/dataRefs';
-export type { ComponentParts, CardLayout, CardSettings } from './extensions';
+export type {
+  ComponentParts,
+  WidgetLayout,
+  WidgetSettings,
+  CardLayout,
+  CardSettings,
+} from './extensions';

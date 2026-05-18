@@ -1,0 +1,45 @@
+app:
+  title: Backstage Example App for Home Plugin
+  baseUrl: http://localhost:3000
+  packages: all # ✨
+  extensions:
+    - 'home-page-widget:home/top-visited': true
+    - home-page-widget:home/featured-docs:
+        config:
+          filter:
+            kind: Component
+          responseLimit: 2
+          subLinkText: Read the docs
+    - home-page-widget:catalog/starred-entities:
+        config:
+          groupByKind: true
+    - home-page-widget:home/toolkit:
+        config:
+          tools:
+            - url: https://backstage.io
+              label: Backstage Docs
+              icon: techdocs
+            - url: https://backstage.io/docs
+              label: Documentation
+              icon: catalog
+    - page:home:
+        config:
+          layoutConfig:
+            - component: search
+              x: 2
+              y: 0
+              width: 8
+              height: 2
+            - component: home-page-widget:home/toolkit
+              x: 1
+              y: 1
+              width: 2
+              height: 6
+            - component: HomePageStarredEntities
+              x: 4
+              y: 1
+              width: 4
+              height: 6
+
+backend:
+  baseUrl: http://localhost:7007

@@ -22,19 +22,21 @@ import catalogPlugin from '@backstage/plugin-catalog/alpha';
 import HomeIcon from '@material-ui/icons/Home';
 import ReactDOM from 'react-dom/client';
 import { Fragment } from 'react';
+// eslint-disable-next-line @backstage/no-ui-css-imports-in-non-frontend
+import '@backstage/ui/css/styles.css';
 
+import { createFrontendModule } from '@backstage/frontend-plugin-api';
 import {
-  ApiBlueprint,
-  createFrontendModule,
-} from '@backstage/frontend-plugin-api';
-import {
-  HomePageWidgetBlueprint,
   HomePageLayoutBlueprint,
+  HomePageWidgetBlueprint,
 } from '@backstage/plugin-home-react/alpha';
 import { HeaderWorldClock, WelcomeTitle, type ClockConfig } from '../src';
 import homePlugin from '../src/alpha';
 import { CustomHomepageGrid } from '../src/components';
 import type { LayoutConfiguration } from '../src/components/CustomHomepage/types';
+
+import searchPlugin from '@backstage/plugin-search/alpha'; // For reference in the SearchBarWidget loader test
+import { Entity } from '@backstage/catalog-model';
 
 const clockConfigs: ClockConfig[] = [
   { label: 'NYC', timeZone: 'America/New_York' },
@@ -51,9 +53,18 @@ const timeFormat: Intl.DateTimeFormatOptions = {
 
 const defaultGridConfig: LayoutConfiguration[] = [
   {
+    component: 'HomePageSearchBar', // this is added from the Search plugin
+    x: 1,
+    y: 0,
+    width: 10,
+    height: 2,
+    movable: true,
+    resizable: true,
+  },
+  {
     component: 'HomePageToolkit',
     x: 0,
-    y: 0,
+    y: 1,
     width: 12,
     height: 4,
     movable: false,
@@ -62,14 +73,14 @@ const defaultGridConfig: LayoutConfiguration[] = [
   {
     component: 'HomePageStarredEntities',
     x: 0,
-    y: 4,
+    y: 6,
     width: 6,
     height: 5,
   },
   {
     component: 'HomePageRandomJoke',
     x: 6,
-    y: 4,
+    y: 6,
     width: 6,
     height: 5,
   },
@@ -78,7 +89,7 @@ const defaultGridConfig: LayoutConfiguration[] = [
 const homePageLayout = HomePageLayoutBlueprint.make({
   params: {
     loader: async () =>
-      function CustomHomePageLayout({ widgets }) {
+      function CustomHomePageLayout({ widgets, layoutConfig }) {
         return (
           <Page themeId="home">
             <Header title={<WelcomeTitle />} pageTitleOverride="Home">
@@ -88,7 +99,7 @@ const homePageLayout = HomePageLayoutBlueprint.make({
               />
             </Header>
             <Content>
-              <CustomHomepageGrid config={defaultGridConfig}>
+              <CustomHomepageGrid config={layoutConfig ?? defaultGridConfig}>
                 {widgets.map((widget, index) => (
                   <Fragment key={widget.name ?? index}>
                     {widget.component}
@@ -103,10 +114,10 @@ const homePageLayout = HomePageLayoutBlueprint.make({
 });
 
 const homePageToolkitWidget = HomePageWidgetBlueprint.make({
-  name: 'home-toolkit',
+  name: 'custom-toolkit',
   params: {
     name: 'HomePageToolkit',
-    title: 'Toolkit',
+    title: 'My Toolkit',
     components: () =>
       import('../src/homePageComponents/Toolkit').then(m => ({
         Content: m.Content,
@@ -124,20 +135,8 @@ const homePageToolkitWidget = HomePageWidgetBlueprint.make({
   },
 });
 
-const homePageStarredEntitiesWidget = HomePageWidgetBlueprint.make({
-  name: 'home-starred-entities',
-  params: {
-    name: 'HomePageStarredEntities',
-    title: 'Your Starred Entities',
-    components: () =>
-      import('../src/homePageComponents/StarredEntities').then(m => ({
-        Content: m.Content,
-      })),
-  },
-});
-
 const homePageRandomJokeWidget = HomePageWidgetBlueprint.make({
-  name: 'home-random-joke',
+  name: 'random-joke', // overrides the widget coming from the plugin
   params: {
     name: 'HomePageRandomJoke',
     title: 'Random Joke',
@@ -169,31 +168,142 @@ const homePageRandomJokeWidget = HomePageWidgetBlueprint.make({
     },
   },
 });
+const simple = HomePageWidgetBlueprint.make({
+  name: 'simple-widget',
+  params: {
+    render: 'basic',
+    name: 'SimpleWidget',
+    title: 'Simple Widget',
+    loader: async () =>
+      function SimpleWidget({ exampleSetting }: { exampleSetting?: string }) {
+        return (
+          <div>
+            Current setting value: <strong>{exampleSetting ?? ''}</strong>
+          </div>
+        );
+      },
+    settings: {
+      schema: {
+        title: 'Simple Widget settings',
+        type: 'object',
+        properties: {
+          exampleSetting: {
+            title: 'Example Setting',
+            type: 'string',
+            default: 'default setting value',
+          },
+        },
+      },
+    },
+  },
+});
 
 const homeDevModule = createFrontendModule({
   pluginId: 'home',
   extensions: [
     homePageLayout,
     homePageToolkitWidget,
-    homePageStarredEntitiesWidget,
     homePageRandomJokeWidget,
+    simple,
   ],
 });
 
-const entities = [
+const entities: Entity[] = [
   {
     apiVersion: 'backstage.io/v1alpha1',
     kind: 'Component',
     metadata: {
-      name: 'example',
+      name: 'example-service',
+      description: 'An example backend service',
       annotations: {
         'backstage.io/managed-by-location': 'file:/path/to/catalog-info.yaml',
+        'backstage.io/techdocs-ref': 'dir:.',
       },
     },
     spec: {
       type: 'service',
       lifecycle: 'production',
       owner: 'guest',
+    },
+  },
+  {
+    apiVersion: 'backstage.io/v1alpha1',
+    kind: 'Component',
+    metadata: {
+      name: 'example-website',
+      description: 'An example frontend website',
+      annotations: {
+        'backstage.io/managed-by-location': 'file:/path/to/catalog-info.yaml',
+        'backstage.io/techdocs-ref': 'dir:.',
+      },
+    },
+    spec: {
+      type: 'website',
+      lifecycle: 'production',
+      owner: 'guest',
+    },
+  },
+  {
+    apiVersion: 'backstage.io/v1alpha1',
+    kind: 'Component',
+    metadata: {
+      name: 'example-library',
+      description: 'A shared utility library',
+      annotations: {
+        'backstage.io/managed-by-location': 'file:/path/to/catalog-info.yaml',
+        'backstage.io/techdocs-ref': 'dir:.',
+      },
+    },
+    spec: {
+      type: 'library',
+      lifecycle: 'experimental',
+      owner: 'guest',
+    },
+  },
+  {
+    apiVersion: 'backstage.io/v1alpha1',
+    kind: 'API',
+    metadata: {
+      name: 'example-api',
+      description: 'An example REST API',
+      annotations: {
+        'backstage.io/managed-by-location': 'file:/path/to/catalog-info.yaml',
+      },
+    },
+    spec: {
+      type: 'openapi',
+      lifecycle: 'production',
+      owner: 'guest',
+      definition: '{}',
+    },
+  },
+  {
+    apiVersion: 'backstage.io/v1alpha1',
+    kind: 'Group',
+    metadata: {
+      name: 'guest-team',
+      description: 'The guest team',
+      annotations: {
+        'backstage.io/managed-by-location': 'file:/path/to/catalog-info.yaml',
+      },
+    },
+    spec: {
+      type: 'team',
+      children: [],
+      members: ['guest'],
+    },
+  },
+  {
+    apiVersion: 'backstage.io/v1alpha1',
+    kind: 'User',
+    metadata: {
+      name: 'guest',
+      annotations: {
+        'backstage.io/managed-by-location': 'file:/path/to/catalog-info.yaml',
+      },
+    },
+    spec: {
+      memberOf: ['guest-team'],
     },
   },
 ];
@@ -203,7 +313,7 @@ const catalogApi = catalogApiMock({ entities });
 const catalogPluginOverrides = createFrontendModule({
   pluginId: 'catalog',
   extensions: [
-    ApiBlueprint.make({
+    catalogPlugin.getExtension('api:catalog').override({
       params: defineParams =>
         defineParams({
           api: catalogApiRef,
@@ -220,6 +330,7 @@ const app = createApp({
     catalogPluginOverrides,
     homePlugin, // Load the home plugin
     homeDevModule, // Load the widgets and homepage content
+    searchPlugin,
   ],
 });
 

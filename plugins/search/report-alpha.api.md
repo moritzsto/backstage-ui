@@ -10,6 +10,8 @@ import { ConfigurableExtensionDataRef } from '@backstage/frontend-plugin-api';
 import { ExtensionBlueprintParams } from '@backstage/frontend-plugin-api';
 import { ExtensionDataRef } from '@backstage/frontend-plugin-api';
 import { ExtensionInput } from '@backstage/frontend-plugin-api';
+import { HomePageWidgetBlueprintParams } from '@backstage/plugin-home-react/alpha';
+import { HomePageWidgetData } from '@backstage/plugin-home-react/alpha';
 import { IconComponent } from '@backstage/frontend-plugin-api';
 import { IconElement } from '@backstage/frontend-plugin-api';
 import { JSX as JSX_2 } from 'react';
@@ -43,6 +45,15 @@ const _default: OverridableFrontendPlugin<
       >(
         params: ApiFactory<TApi, TImpl, TDeps>,
       ) => ExtensionBlueprintParams<AnyApiFactory>;
+    }>;
+    'home-page-widget:search': OverridableExtensionDefinition<{
+      kind: 'home-page-widget';
+      name: undefined;
+      config: {};
+      configInput: {};
+      output: ExtensionDataRef<HomePageWidgetData, 'home.widget.data', {}>;
+      inputs: {};
+      params: HomePageWidgetBlueprintParams;
     }>;
     'nav-item:search': OverridableExtensionDefinition<{
       kind: 'nav-item';
@@ -196,6 +207,17 @@ const _default: OverridableFrontendPlugin<
   }
 >;
 export default _default;
+
+// @alpha (undocumented)
+export const homePageSearchBar: OverridableExtensionDefinition<{
+  kind: 'home-page-widget';
+  name: undefined;
+  config: {};
+  configInput: {};
+  output: ExtensionDataRef<HomePageWidgetData, 'home.widget.data', {}>;
+  inputs: {};
+  params: HomePageWidgetBlueprintParams;
+}>;
 
 // @alpha (undocumented)
 export const searchApi: OverridableExtensionDefinition<{

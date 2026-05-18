@@ -4,6 +4,7 @@
 
 ```ts
 import { AppNode } from '@backstage/frontend-plugin-api';
+import { ComponentType } from 'react';
 import { ConfigurableExtensionDataRef } from '@backstage/frontend-plugin-api';
 import { ExtensionBlueprint } from '@backstage/frontend-plugin-api';
 import { ExtensionDataRef } from '@backstage/frontend-plugin-api';
@@ -13,25 +14,11 @@ import { RJSFSchema } from '@rjsf/utils';
 import { TranslationRef } from '@backstage/frontend-plugin-api';
 import { UiSchema } from '@rjsf/utils';
 
-// @public (undocumented)
-export type CardLayout = {
-  width?: {
-    minColumns?: number;
-    maxColumns?: number;
-    defaultColumns?: number;
-  };
-  height?: {
-    minRows?: number;
-    maxRows?: number;
-    defaultRows?: number;
-  };
-};
+// @public @deprecated (undocumented)
+export type CardLayout = WidgetLayout;
 
-// @public (undocumented)
-export type CardSettings = {
-  schema?: RJSFSchema;
-  uiSchema?: UiSchema;
-};
+// @public @deprecated (undocumented)
+export type CardSettings = WidgetSettings;
 
 // @public (undocumented)
 export type ComponentParts = {
@@ -39,6 +26,18 @@ export type ComponentParts = {
   Actions?: () => JSX.Element;
   Settings?: () => JSX.Element;
   ContextProvider?: (props: any) => JSX.Element;
+};
+
+// @alpha
+export type HomePageBasicWidgetParams = HomePageWidgetBaseParams & {
+  render: 'basic';
+  loader: () => Promise<ComponentType<Record<string, unknown>>>;
+};
+
+// @alpha
+export type HomePageCardWidgetParams = HomePageWidgetBaseParams & {
+  render?: 'card';
+  components: () => Promise<ComponentParts>;
 };
 
 // @alpha
@@ -76,8 +75,19 @@ export const homePageLayoutComponentDataRef: ConfigurableExtensionDataRef<
 
 // @alpha
 export interface HomePageLayoutProps {
+  layoutConfig?: LayoutConfiguration[];
   widgets: Array<HomePageWidgetData>;
 }
+
+// @alpha
+export type HomePageWidgetBaseParams = {
+  name?: string;
+  title?: string;
+  description?: string;
+  layout?: WidgetLayout;
+  settings?: WidgetSettings;
+  componentProps?: Record<string, unknown>;
+};
 
 // @alpha
 export const HomePageWidgetBlueprint: ExtensionBlueprint<{
@@ -97,24 +107,18 @@ export const HomePageWidgetBlueprint: ExtensionBlueprint<{
 }>;
 
 // @alpha
-export interface HomePageWidgetBlueprintParams {
-  componentProps?: Record<string, unknown>;
-  components: () => Promise<ComponentParts>;
-  description?: string;
-  layout?: CardLayout;
-  name?: string;
-  settings?: CardSettings;
-  title?: string;
-}
+export type HomePageWidgetBlueprintParams =
+  | HomePageCardWidgetParams
+  | HomePageBasicWidgetParams;
 
 // @alpha
 export interface HomePageWidgetData {
   component: ReactElement;
   description?: string;
-  layout?: CardLayout;
+  layout?: WidgetLayout;
   name?: string;
   node: AppNode;
-  settings?: CardSettings;
+  settings?: WidgetSettings;
   title?: string;
 }
 
@@ -134,6 +138,38 @@ export const homeReactTranslationRef: TranslationRef<
     readonly 'cardExtension.settingsButtonTitle': 'Settings';
   }
 >;
+
+// @alpha
+export type LayoutConfiguration = {
+  component: ReactElement | string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  movable?: boolean;
+  deletable?: boolean;
+  resizable?: boolean;
+};
+
+// @public
+export type WidgetLayout = {
+  width?: {
+    minColumns?: number;
+    maxColumns?: number;
+    defaultColumns?: number;
+  };
+  height?: {
+    minRows?: number;
+    maxRows?: number;
+    defaultRows?: number;
+  };
+};
+
+// @public
+export type WidgetSettings = {
+  schema?: RJSFSchema;
+  uiSchema?: UiSchema;
+};
 
 // (No @packageDocumentation comment for this package)
 ```

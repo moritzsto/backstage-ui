@@ -25,10 +25,10 @@
  */
 
 import { lazy as reactLazy } from 'react';
+import { z } from 'zod/v4';
 import {
   createExtensionInput,
   PageBlueprint,
-  NavItemBlueprint,
   createFrontendPlugin,
   createRouteRef,
   AppRootElementBlueprint,
@@ -37,6 +37,8 @@ import {
   errorApiRef,
   ApiBlueprint,
   ExtensionBoundary,
+  useApi,
+  iconsApiRef,
 } from '@backstage/frontend-plugin-api';
 import { VisitListener } from './components/';
 import { visitsApiRef, VisitsStorageApi, VisitsWebStorageApi } from './api';
@@ -45,8 +47,8 @@ import {
   homePageWidgetDataRef,
   homePageLayoutComponentDataRef,
   HomePageLayoutBlueprint,
-  HomePageWidgetBlueprint,
   type HomePageLayoutProps,
+  HomePageWidgetBlueprint,
 } from '@backstage/plugin-home-react/alpha';
 
 const rootRouteRef = createRouteRef();
@@ -60,11 +62,36 @@ const homePage = PageBlueprint.makeWithOverrides({
       internal: true,
     }),
   },
-  factory(originalFactory, { node, inputs }) {
+  configSchema: {
+    layoutConfig: z
+      .array(
+        z.object({
+          component: z
+            .string()
+            .describe(
+              'Widget name or extension ID to position (e.g. HomePageToolkit, home-page-widget:home/toolkit, or home/toolkit)',
+            ),
+          x: z.number().nonnegative(),
+          y: z.number().nonnegative(),
+          width: z.number().positive(),
+          height: z.number().positive(),
+          movable: z.boolean().optional(),
+          deletable: z.boolean().optional(),
+          resizable: z.boolean().optional(),
+        }),
+      )
+      .optional()
+      .describe(
+        'Default widget positions before the user customises the grid.',
+      ),
+  },
+  factory(originalFactory, { node, inputs, config }) {
     return originalFactory({
       path: '/home',
       noHeader: true,
       routeRef: rootRouteRef,
+      icon: <HomeIcon />,
+      title: 'Home',
       loader: async () => {
         const LazyDefaultLayout = reactLazy(() =>
           import('./alpha/DefaultHomePageLayout').then(m => ({
@@ -87,7 +114,7 @@ const homePage = PageBlueprint.makeWithOverrides({
           node: widget.node,
         }));
 
-        return <Layout widgets={widgets} />;
+        return <Layout widgets={widgets} layoutConfig={config.layoutConfig} />;
       },
     });
   },
@@ -122,45 +149,52 @@ const visitsApi = ApiBlueprint.make({
     }),
 });
 
-const homeNavItem = NavItemBlueprint.make({
-  params: {
-    title: 'Home',
-    routeRef: rootRouteRef,
-    icon: HomeIcon,
-  },
-});
-
-const homePageToolkitWidget = HomePageWidgetBlueprint.make({
+const homePageToolkitWidget = HomePageWidgetBlueprint.makeWithOverrides({
   name: 'toolkit',
-  params: {
-    name: 'HomePageToolkit',
-    title: 'Toolkit',
-    components: () =>
-      import('./homePageComponents/Toolkit').then(m => ({
-        Content: m.Content,
-        ContextProvider: m.ContextProvider,
-      })),
-    componentProps: {
-      tools: [
-        {
-          url: 'https://backstage.io',
-          label: 'Backstage Docs',
-          icon: <HomeIcon />,
-        },
-      ],
-    },
+  configSchema: {
+    tools: z
+      .array(
+        z.object({
+          url: z.string(),
+          label: z.string(),
+          icon: z.string().optional(),
+        }),
+      )
+      .optional(),
   },
-});
-
-const homePageStarredEntitiesWidget = HomePageWidgetBlueprint.make({
-  name: 'starred-entities',
-  params: {
-    name: 'HomePageStarredEntities',
-    title: 'Your Starred Entities',
-    components: () =>
-      import('./homePageComponents/StarredEntities').then(m => ({
-        Content: m.Content,
-      })),
+  factory(origFactory, { config }) {
+    return origFactory({
+      name: 'HomePageToolkit',
+      title: 'Toolkit',
+      components: () =>
+        import('./homePageComponents/Toolkit').then(m => {
+          const ToolkitContextProvider = (
+            props: Parameters<typeof m.ContextProvider>[0],
+          ) => {
+            const icons = useApi(iconsApiRef);
+            const tools = config.tools
+              ? config.tools.map(tool => {
+                  const Icon = tool.icon ? icons.icon(tool.icon) : undefined;
+                  return { ...tool, icon: Icon ? Icon : undefined };
+                })
+              : props.tools;
+            return <m.ContextProvider {...props} tools={tools} />;
+          };
+          return {
+            Content: (props: any) => <m.Content {...props} />,
+            ContextProvider: ToolkitContextProvider,
+          };
+        }),
+      componentProps: {
+        tools: [
+          {
+            url: 'https://backstage.io',
+            label: 'Backstage Docs',
+            icon: <HomeIcon />,
+          },
+        ],
+      },
+    });
   },
 });
 
@@ -198,6 +232,88 @@ const homePageRandomJokeWidget = HomePageWidgetBlueprint.make({
   },
 });
 
+const homePageTopVisitedWidget = HomePageWidgetBlueprint.makeWithOverrides({
+  name: 'top-visited',
+  disabled: true,
+  configSchema: {
+    numVisitsOpen: z.number().optional(),
+    numVisitsTotal: z.number().optional(),
+  },
+  factory(origFactory, { config }) {
+    return origFactory({
+      name: 'HomePageTopVisited',
+      title: 'Top Visited',
+      components: () =>
+        import('./homePageComponents/VisitedByType/TopVisited').then(m => ({
+          Content: m.Content,
+          Actions: m.Actions,
+          ContextProvider: m.ContextProvider,
+        })),
+      componentProps: {
+        numVisitsOpen: config.numVisitsOpen,
+        numVisitsTotal: config.numVisitsTotal,
+      },
+    });
+  },
+});
+
+const homePageRecentlyVisitedWidget = HomePageWidgetBlueprint.makeWithOverrides(
+  {
+    name: 'recently-visited',
+    disabled: true,
+    configSchema: {
+      numVisitsOpen: z.number().optional(),
+      numVisitsTotal: z.number().optional(),
+    },
+    factory(origFactory, { config }) {
+      return origFactory({
+        name: 'HomePageRecentlyVisited',
+        title: 'Recently Visited',
+        components: () =>
+          import('./homePageComponents/VisitedByType/RecentlyVisited').then(
+            m => ({
+              Content: m.Content,
+              Actions: m.Actions,
+              ContextProvider: m.ContextProvider,
+            }),
+          ),
+        componentProps: {
+          numVisitsOpen: config.numVisitsOpen,
+          numVisitsTotal: config.numVisitsTotal,
+        },
+      });
+    },
+  },
+);
+
+const homePageFeaturedDocsWidget = HomePageWidgetBlueprint.makeWithOverrides({
+  name: 'featured-docs',
+  configSchema: {
+    filter: z
+      .record(z.string(), z.union([z.string(), z.array(z.string())]))
+      .describe('Catalog entity filter to select which docs are featured.'),
+    responseLimit: z.number().optional(),
+    linkDestination: z.string().optional(),
+    subLinkText: z.string().optional(),
+  },
+  factory(origFactory, { config }) {
+    return origFactory({
+      name: 'FeaturedDocsCard',
+      title: 'Featured Docs',
+      components: () =>
+        import('./homePageComponents/FeaturedDocsCard').then(m => ({
+          Content: m.Content,
+        })),
+      componentProps: {
+        filter: config.filter,
+        responseLimit: config.responseLimit,
+        linkDestination: config.linkDestination,
+        subLinkText: config.subLinkText,
+      },
+    });
+  },
+});
+
 /**
  * Home plugin for the new frontend system.
  *
@@ -213,12 +329,14 @@ export default createFrontendPlugin({
   info: { packageJson: () => import('../package.json') },
   extensions: [
     homePage,
-    homeNavItem,
     visitsApi,
     visitListenerAppRootElement,
     homePageToolkitWidget,
-    homePageStarredEntitiesWidget,
     homePageRandomJokeWidget,
+    homePageTopVisitedWidget,
+    homePageRecentlyVisitedWidget,
+    homePageFeaturedDocsWidget,
+    // homePageQuickStartWidget,
   ],
   routes: {
     root: rootRouteRef,

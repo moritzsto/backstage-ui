@@ -119,3 +119,18 @@ These are the [extension blueprints](../architecture/23-extension-blueprints.md)
 ### SearchResultListItem - [Example](https://github.com/backstage/backstage/blob/8cb9a85596a5417a004811ffa429527b17ce9b72/plugins/catalog/src/alpha/searchResultItems.tsx#L19-L27)
 
 Creates search result list items for different types of search results, to be displayed in search result lists. Exported as `SearchResultListItemBlueprint`.
+
+## Extension blueprints in `@backstage/plugin-home-react/alpha`
+
+These are the [extension blueprints](../architecture/23-extension-blueprints.md) provided by the Home plugin for building customizable home pages in the new frontend system.
+
+### HomePageWidgetBlueprint - [Example](https://github.com/backstage/backstage/blob/516b37bf8f655fc4d93ee352852b9daa658bea10/plugins/search/src/alpha.tsx#L278-L285)
+
+Creates widgets that can be installed into the home page grid. The `render` param controls how the widget is presented:
+
+- `render?: 'card'` (default) — wraps the widget in an `InfoCard` with a title header, optional secondary action, settings popover, and context provider.
+- `render: 'basic'` — renders the component without any card chrome. Use this for any widget that manages its own visual presentation.
+
+### HomePageLayoutBlueprint - [Example](https://github.com/backstage/backstage/blob/05937ec12702f8a521a0b6b634dbec6f4aa1c51d/plugins/home/dev/index.tsx#L92-L117)
+
+Creates a custom home page layout. A layout receives the list of installed widgets via a `widgets` prop and is responsible for arranging them on the page. Only one layout can be active at a time. If no layout extension is installed, the home page plugin provides a built-in default grid layout.
