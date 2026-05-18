@@ -2483,13 +2483,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@backstage-community/plugin-explore-common@npm:^0.12.0":
-  version: 0.12.0
-  resolution: "@backstage-community/plugin-explore-common@npm:0.12.0"
-  checksum: 10/744ffa86c794ed612a257b7eba018d8bd433e160db9c29e9d72cca791f58fbed1fbbcacf2b670b992b7f13eb0cd0a08014ba60108ac17196dbee4699b8b6f0f1
-  languageName: node
-  linkType: hard
-
 "@backstage/app-defaults@workspace:^, @backstage/app-defaults@workspace:packages/app-defaults":
   version: 0.0.0-use.local
   resolution: "@backstage/app-defaults@workspace:packages/app-defaults"
@@ -7172,21 +7165,6 @@ __metadata:
     aws4: "npm:^1.12.0"
     elastic-builder: "npm:^2.16.0"
     lodash: "npm:^4.17.21"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/plugin-search-backend-module-explore@workspace:^, @backstage/plugin-search-backend-module-explore@workspace:plugins/search-backend-module-explore":
-  version: 0.0.0-use.local
-  resolution: "@backstage/plugin-search-backend-module-explore@workspace:plugins/search-backend-module-explore"
-  dependencies:
-    "@backstage-community/plugin-explore-common": "npm:^0.12.0"
-    "@backstage/backend-plugin-api": "workspace:^"
-    "@backstage/backend-test-utils": "workspace:^"
-    "@backstage/cli": "workspace:^"
-    "@backstage/config": "workspace:^"
-    "@backstage/plugin-search-backend-node": "workspace:^"
-    "@backstage/plugin-search-common": "workspace:^"
-    msw: "npm:^1.2.1"
   languageName: unknown
   linkType: soft
 
@@ -29315,7 +29293,6 @@ __metadata:
     "@backstage/plugin-search-backend": "workspace:^"
     "@backstage/plugin-search-backend-module-catalog": "workspace:^"
     "@backstage/plugin-search-backend-module-elasticsearch": "workspace:^"
-    "@backstage/plugin-search-backend-module-explore": "workspace:^"
     "@backstage/plugin-search-backend-module-techdocs": "workspace:^"
     "@backstage/plugin-search-backend-node": "workspace:^"
     "@backstage/plugin-signals-backend": "workspace:^"

@@ -25,7 +25,6 @@ export default createBackendFeatureLoader({
     return [
       import('@backstage/plugin-search-backend'),
       import('@backstage/plugin-search-backend-module-catalog'),
-      import('@backstage/plugin-search-backend-module-explore'),
       import('@backstage/plugin-search-backend-module-techdocs'),
     ];
   },
@@ -65,7 +64,6 @@ export default createBackendFeatureLoader({
     if (config.getOptionalString('customFeatureToggle.search')) {
       yield import('@backstage/plugin-search-backend');
       yield import('@backstage/plugin-search-backend-module-catalog');
-      yield import('@backstage/plugin-search-backend-module-explore');
       yield import('@backstage/plugin-search-backend-module-techdocs');
     }
   },
@@ -111,8 +109,8 @@ export default createBackendFeatureLoader({
 
       const remoteMetadata = await fetchMetadata();
 
-      if (remoteMetadata.enableExplore) {
-        yield import('@backstage/plugin-search-backend-module-explore');
+      if (remoteMetadata.enableElasticSearch) {
+        yield import('@backstage/plugin-search-backend-module-elasticsearch');
       }
       if (remoteMetadata.enableTechDocs) {
         yield import('@backstage/plugin-search-backend-module-techdocs');
