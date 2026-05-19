@@ -14,6 +14,10 @@ import { JsonValue } from '@backstage/types';
 import { LoggerService } from '@backstage/backend-plugin-api';
 import { MetricsService } from '@backstage/backend-plugin-api/alpha';
 import { ServiceFactory } from '@backstage/backend-plugin-api';
+import { TracingService } from '@backstage/backend-plugin-api/alpha';
+import { TracingServiceAttributeValue } from '@backstage/backend-plugin-api/alpha';
+import { TracingServiceSpan } from '@backstage/backend-plugin-api/alpha';
+import { TracingServiceSpanStatus } from '@backstage/backend-plugin-api/alpha';
 
 // @alpha (undocumented)
 export function actionsRegistryServiceMock(options?: {
@@ -81,6 +85,14 @@ export class MockActionsRegistry
   >(options: ActionsRegistryActionOptions<TInputSchema, TOutputSchema>): void;
 }
 
+// @alpha
+export interface MockedTracingServiceSpan extends TracingServiceSpan {
+  // (undocumented)
+  setAttribute: jest.Mock<void, [string, TracingServiceAttributeValue]>;
+  // (undocumented)
+  setStatus: jest.Mock<void, [TracingServiceSpanStatus]>;
+}
+
 // @public (undocumented)
 export type ServiceMock<TService> = {
   factory: ServiceFactory<TService>;
@@ -91,6 +103,21 @@ export type ServiceMock<TService> = {
     ? TService[Key] & jest.MockInstance<Return, Args>
     : TService[Key];
 };
+
+// @alpha
+export interface TracingServiceMock extends TracingService {
+  // (undocumented)
+  factory: ServiceFactory<TracingService>;
+  spans: MockedTracingServiceSpan[];
+  // (undocumented)
+  startActiveSpan: jest.MockedFunction<TracingService['startActiveSpan']>;
+}
+
+// @alpha (undocumented)
+export namespace tracingServiceMock {
+  const factory: () => ServiceFactory<TracingService, 'plugin', 'singleton'>;
+  const mock: () => TracingServiceMock;
+}
 
 // (No @packageDocumentation comment for this package)
 ```

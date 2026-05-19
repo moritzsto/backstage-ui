@@ -10,6 +10,7 @@ import { JsonObject } from '@backstage/types';
 import { JSONSchema7 } from 'json-schema';
 import { JsonValue } from '@backstage/types';
 import { LoggerService } from '@backstage/backend-plugin-api';
+import type { Request as Request_2 } from 'express';
 import { ServiceRef } from '@backstage/backend-plugin-api';
 import { z } from 'zod/v3';
 
@@ -288,6 +289,69 @@ export const rootSystemMetadataServiceRef: ServiceRef<
   'root',
   'singleton'
 >;
+
+// @alpha
+export interface TracingService {
+  startActiveSpan<T>(
+    name: string,
+    fn: (span: TracingServiceSpan) => T | Promise<T>,
+    options?: TracingServiceSpanOptions,
+  ): Promise<T>;
+}
+
+// @alpha
+export interface TracingServiceAttributes {
+  // (undocumented)
+  [key: string]: TracingServiceAttributeValue | undefined;
+}
+
+// @alpha
+export type TracingServiceAttributeValue =
+  | string
+  | number
+  | boolean
+  | Array<null | undefined | string>
+  | Array<null | undefined | number>
+  | Array<null | undefined | boolean>;
+
+// @alpha
+export const tracingServiceRef: ServiceRef<
+  TracingService,
+  'plugin',
+  'singleton'
+>;
+
+// @alpha
+export interface TracingServiceSpan {
+  // (undocumented)
+  setAttribute(key: string, value: TracingServiceAttributeValue): void;
+  // (undocumented)
+  setStatus(status: TracingServiceSpanStatus): void;
+}
+
+// @alpha
+export type TracingServiceSpanKind =
+  | 'internal'
+  | 'server'
+  | 'client'
+  | 'producer'
+  | 'consumer';
+
+// @alpha
+export interface TracingServiceSpanOptions {
+  attributes?: TracingServiceAttributes;
+  credentials?: BackstageCredentials;
+  kind?: TracingServiceSpanKind;
+  request?: Request_2<any, any, any, any, any>;
+}
+
+// @alpha
+export interface TracingServiceSpanStatus {
+  // (undocumented)
+  code: 'unset' | 'ok' | 'error';
+  // (undocumented)
+  message?: string;
+}
 
 // (No @packageDocumentation comment for this package)
 ```

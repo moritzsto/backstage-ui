@@ -58,6 +58,7 @@ yarn.lock                                         @backstage/maintainers @backst
 /plugins/catalog-backend-module-backstage-openapi @backstage/maintainers @backstage/openapi-tooling-maintainers
 /plugins/catalog-backend-module-gitea             @backstage/maintainers @backstage/catalog-maintainers
 /plugins/catalog-backend-module-msgraph           @backstage/maintainers @backstage/catalog-maintainers @pjungermann
+/plugins/catalog-backend-module-msgraph-incremental @backstage/maintainers @backstage/catalog-maintainers
 /plugins/catalog-backend-module-puppetdb          @backstage/maintainers @backstage/catalog-maintainers
 /plugins/catalog-graph                            @backstage/maintainers @backstage/catalog-maintainers @backstage/sda-se-reviewers
 /plugins/devtools                                 @backstage/maintainers @awanlin

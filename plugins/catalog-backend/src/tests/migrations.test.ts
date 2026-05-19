@@ -1095,6 +1095,164 @@ describe('migrations', () => {
   );
 
   it.each(databases.eachSupportedId())(
+    '20260510000000_search_indices_and_dedup.js, %p',
+    async databaseId => {
+      const knex = await databases.init(databaseId);
+
+      await migrateUntilBefore(
+        knex,
+        '20260510000000_search_indices_and_dedup.js',
+      );
+
+      // Set up FK dependencies: search → final_entities → refresh_state
+      await knex('refresh_state').insert({
+        entity_id: 'e1',
+        entity_ref: 'k:ns/n1',
+        unprocessed_entity: '{}',
+        errors: '[]',
+        next_update_at: knex.fn.now(),
+        last_discovery_at: knex.fn.now(),
+      });
+      await knex('final_entities').insert({
+        entity_id: 'e1',
+        entity_ref: 'k:ns/n1',
+        hash: 'h1',
+        final_entity: '{}',
+      });
+
+      // Insert search rows with duplicates on (entity_id, key, value).
+      // Both copies of k1 share the same original_value so the surviving row
+      // is unambiguous across all database dedup strategies.
+      // The two null-value rows verify that null dedup does not conflate null
+      // with non-null or remove more rows than it should.
+      await knex('search').insert([
+        { entity_id: 'e1', key: 'k1', value: 'v1', original_value: 'v1' }, // first copy
+        { entity_id: 'e1', key: 'k1', value: 'v1', original_value: 'v1' }, // duplicate — removed
+        { entity_id: 'e1', key: 'k2', value: null, original_value: null }, // null first — kept
+        { entity_id: 'e1', key: 'k2', value: null, original_value: null }, // null duplicate — removed
+        { entity_id: 'e1', key: 'k3', value: 'v3', original_value: 'v3' }, // unique — kept
+      ]);
+
+      // Preconditions NOT met: dedup runs
+      await migrateUpOnce(knex);
+
+      // 5 rows collapsed to 3 unique (entity_id, key, value) combinations
+      const rows = await knex('search').orderBy('key');
+      expect(rows).toHaveLength(3);
+      expect(rows.map(r => r.key)).toEqual(['k1', 'k2', 'k3']);
+      expect(rows[0]).toEqual(
+        expect.objectContaining({
+          key: 'k1',
+          value: 'v1',
+          original_value: 'v1',
+        }),
+      );
+      // null-value row survives correctly
+      expect(rows[1]).toEqual(
+        expect.objectContaining({
+          key: 'k2',
+          value: null,
+          original_value: null,
+        }),
+      );
+
+      // Unique constraint is now in place
+      await expect(
+        knex('search').insert({
+          entity_id: 'e1',
+          key: 'k1',
+          value: 'v1',
+          original_value: 'extra',
+        }),
+      ).rejects.toEqual(expect.anything());
+
+      await migrateDownOnce(knex);
+
+      // After rollback the unique constraint is gone — duplicates are allowed again
+      await expect(
+        knex('search').insert({
+          entity_id: 'e1',
+          key: 'k1',
+          value: 'v1',
+          original_value: 'extra',
+        }),
+      ).resolves.not.toThrow();
+
+      await knex.destroy();
+    },
+  );
+
+  it.each(databases.eachSupportedId())(
+    '20260510000000_search_indices_and_dedup.js preconditions met (PG fast path), %p',
+    async databaseId => {
+      const knex = await databases.init(databaseId);
+
+      // The fast path (skip dedup when unique index pre-exists) is a
+      // PostgreSQL-only code path that checks pg_index.
+      if (!knex.client.config.client.includes('pg')) {
+        await knex.destroy();
+        return;
+      }
+
+      await migrateUntilBefore(
+        knex,
+        '20260510000000_search_indices_and_dedup.js',
+      );
+
+      await knex('refresh_state').insert({
+        entity_id: 'e1',
+        entity_ref: 'k:ns/n1',
+        unprocessed_entity: '{}',
+        errors: '[]',
+        next_update_at: knex.fn.now(),
+        last_discovery_at: knex.fn.now(),
+      });
+      await knex('final_entities').insert({
+        entity_id: 'e1',
+        entity_ref: 'k:ns/n1',
+        hash: 'h1',
+        final_entity: '{}',
+      });
+
+      // Insert clean rows (no duplicates) so the unique index can be created
+      await knex('search').insert([
+        { entity_id: 'e1', key: 'k1', value: 'v1', original_value: 'V1' },
+        { entity_id: 'e1', key: 'k2', value: null, original_value: null },
+      ]);
+
+      // Simulate a user who manually deduped and created the unique index
+      // before deploying this version
+      await knex.raw(
+        `CREATE UNIQUE INDEX search_entity_key_value_idx ON search (entity_id, key, value)`,
+      );
+
+      // Migration detects the existing unique index and skips the dedup step
+      await migrateUpOnce(knex);
+
+      // Row count unchanged — no rows were removed by dedup
+      const rows = await knex('search').orderBy('key');
+      expect(rows).toHaveLength(2);
+      expect(rows[0]).toEqual(
+        expect.objectContaining({
+          key: 'k1',
+          value: 'v1',
+          original_value: 'V1',
+        }),
+      );
+      expect(rows[1]).toEqual(
+        expect.objectContaining({
+          key: 'k2',
+          value: null,
+          original_value: null,
+        }),
+      );
+
+      await migrateDownOnce(knex);
+      await knex.destroy();
+    },
+  );
+
+  it.each(databases.eachSupportedId())(
     '20260403000000_add_location_entity_ref.js, %p',
     async databaseId => {
       const knex = await databases.init(databaseId);

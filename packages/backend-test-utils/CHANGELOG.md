@@ -1,5 +1,55 @@
 # @backstage/backend-test-utils
 
+## 1.11.3-next.2
+
+### Patch Changes
+
+- 7fb12b8: Added a new tracing service mock to be leveraged in tests
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.1-next.1
+  - @backstage/backend-defaults@0.17.1-next.2
+
+## 1.11.3-next.1
+
+### Patch Changes
+
+- e9b78e9: Removed the `uuid` dependency and replaced usage with the built-in `crypto.randomUUID()`.
+- Updated dependencies
+  - @backstage/backend-defaults@0.17.1-next.1
+  - @backstage/plugin-auth-node@0.7.1-next.1
+  - @backstage/plugin-permission-common@0.9.9-next.1
+
+## 1.11.3-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.3.1-next.0
+  - @backstage/backend-app-api@1.7.0-next.0
+  - @backstage/backend-defaults@0.17.1-next.0
+  - @backstage/plugin-auth-node@0.7.1-next.0
+  - @backstage/backend-plugin-api@1.9.1-next.0
+  - @backstage/config@1.3.8-next.0
+  - @backstage/plugin-events-node@0.4.22-next.0
+  - @backstage/plugin-permission-common@0.9.9-next.0
+  - @backstage/types@1.2.2
+
+## 1.11.2
+
+### Patch Changes
+
+- 4559806: Added support for typed `examples` on actions registered via the actions registry. Action authors can now provide examples with compile-time-checked `input` and `output` values that match their schema definitions.
+- f44c6bd: Deduplicated internal readiness-polling helpers used by the database and cache test infrastructure.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0
+  - @backstage/backend-defaults@0.17.0
+  - @backstage/errors@1.3.0
+  - @backstage/plugin-auth-node@0.7.0
+  - @backstage/backend-app-api@1.6.1
+  - @backstage/config@1.3.7
+  - @backstage/plugin-events-node@0.4.21
+  - @backstage/plugin-permission-common@0.9.8
+
 ## 1.11.2-next.2
 
 ### Patch Changes

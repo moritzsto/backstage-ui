@@ -82,12 +82,12 @@ export const catalogReactTranslationRef: TranslationRef<
     readonly 'inspectEntityDialog.overviewPage.labels': 'Labels';
     readonly 'inspectEntityDialog.overviewPage.status.title': 'Status';
     readonly 'inspectEntityDialog.overviewPage.identity.title': 'Identity';
-    readonly 'inspectEntityDialog.overviewPage.annotations': 'Annotations';
     readonly 'inspectEntityDialog.overviewPage.tags': 'Tags';
+    readonly 'inspectEntityDialog.overviewPage.annotations': 'Annotations';
+    readonly 'inspectEntityDialog.overviewPage.relation.title': 'Relations';
     readonly 'inspectEntityDialog.overviewPage.copyAriaLabel': 'Copy {{label}}';
     readonly 'inspectEntityDialog.overviewPage.copiedStatus': 'Copied';
     readonly 'inspectEntityDialog.overviewPage.helpLinkAriaLabel': 'Learn more';
-    readonly 'inspectEntityDialog.overviewPage.relation.title': 'Relations';
     readonly 'inspectEntityDialog.yamlPage.title': 'Entity as YAML';
     readonly 'inspectEntityDialog.yamlPage.description': 'This is the raw entity data as received from the catalog, on YAML form.';
     readonly 'inspectEntityDialog.tabNames.json': 'Raw JSON';
@@ -122,8 +122,8 @@ export const catalogReactTranslationRef: TranslationRef<
     readonly 'entityTableColumnTitle.description': 'Description';
     readonly 'entityTableColumnTitle.system': 'System';
     readonly 'entityTableColumnTitle.namespace': 'Namespace';
-    readonly 'entityTableColumnTitle.domain': 'Domain';
     readonly 'entityTableColumnTitle.tags': 'Tags';
+    readonly 'entityTableColumnTitle.domain': 'Domain';
     readonly 'entityTableColumnTitle.owner': 'Owner';
     readonly 'entityTableColumnTitle.lifecycle': 'Lifecycle';
     readonly 'entityTableColumnTitle.targets': 'Targets';
@@ -339,9 +339,9 @@ export const EntityContentBlueprint: ExtensionBlueprint<{
     icon: string | undefined;
   };
   configInput: {
-    filter?: FilterPredicate | undefined;
-    title?: string | undefined;
     path?: string | undefined;
+    title?: string | undefined;
+    filter?: FilterPredicate | undefined;
     group?: string | false | undefined;
     icon?: string | undefined;
   };
@@ -418,8 +418,8 @@ export const EntityContentLayoutBlueprint: ExtensionBlueprint<{
     filter: FilterPredicate | undefined;
   };
   configInput: {
-    filter?: FilterPredicate | undefined;
     type?: string | undefined;
+    filter?: FilterPredicate | undefined;
   };
   dataRefs: {
     filterFunction: ConfigurableExtensionDataRef<
@@ -611,9 +611,9 @@ export const EntityIconLinkBlueprint: ExtensionBlueprint<{
     filter: FilterPredicate | undefined;
   };
   configInput: {
-    filter?: FilterPredicate | undefined;
     label?: string | undefined;
     title?: string | undefined;
+    filter?: FilterPredicate | undefined;
   };
   dataRefs: {
     useProps: ConfigurableExtensionDataRef<

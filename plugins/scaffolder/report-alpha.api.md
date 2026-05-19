@@ -143,9 +143,9 @@ const _default: OverridableFrontendPlugin<
         filter: FilterPredicate | undefined;
       };
       configInput: {
-        filter?: FilterPredicate | undefined;
         label?: string | undefined;
         title?: string | undefined;
+        filter?: FilterPredicate | undefined;
       };
       output:
         | ExtensionDataRef<
@@ -176,8 +176,12 @@ const _default: OverridableFrontendPlugin<
     'nav-item:scaffolder': OverridableExtensionDefinition<{
       kind: 'nav-item';
       name: undefined;
-      config: {};
-      configInput: {};
+      config: {
+        title: string | undefined;
+      };
+      configInput: {
+        title?: string | undefined;
+      };
       output: ExtensionDataRef<
         {
           title: string;
@@ -200,8 +204,8 @@ const _default: OverridableFrontendPlugin<
         title: string | undefined;
       };
       configInput: {
-        title?: string | undefined;
         path?: string | undefined;
+        title?: string | undefined;
       };
       output:
         | ExtensionDataRef<string, 'core.routing.path', {}>
@@ -440,8 +444,8 @@ const _default: OverridableFrontendPlugin<
         title: string | undefined;
       };
       configInput: {
-        title?: string | undefined;
         path?: string | undefined;
+        title?: string | undefined;
       };
       output:
         | ExtensionDataRef<string, 'core.routing.path', {}>
@@ -478,8 +482,8 @@ const _default: OverridableFrontendPlugin<
         title: string | undefined;
       };
       configInput: {
-        title?: string | undefined;
         path?: string | undefined;
+        title?: string | undefined;
       };
       output:
         | ExtensionDataRef<string, 'core.routing.path', {}>
@@ -516,8 +520,8 @@ const _default: OverridableFrontendPlugin<
         title: string | undefined;
       };
       configInput: {
-        title?: string | undefined;
         path?: string | undefined;
+        title?: string | undefined;
       };
       output:
         | ExtensionDataRef<string, 'core.routing.path', {}>
@@ -548,12 +552,26 @@ const _default: OverridableFrontendPlugin<
     }>;
     'sub-page:scaffolder/templates': OverridableExtensionDefinition<{
       config: {
+        enableBackstageUi: boolean;
+        groups:
+          | {
+              title: string;
+              filter: FilterPredicate;
+            }[]
+          | undefined;
         path: string | undefined;
         title: string | undefined;
       };
       configInput: {
-        title?: string | undefined;
+        enableBackstageUi?: boolean | undefined;
+        groups?:
+          | {
+              title: string;
+              filter: FilterPredicate;
+            }[]
+          | undefined;
         path?: string | undefined;
+        title?: string | undefined;
       };
       output:
         | ExtensionDataRef<string, 'core.routing.path', {}>
@@ -592,8 +610,8 @@ const _default: OverridableFrontendPlugin<
         title: string | undefined;
       };
       configInput: {
-        title?: string | undefined;
         path?: string | undefined;
+        title?: string | undefined;
       };
       output:
         | ExtensionDataRef<string, 'core.routing.path', {}>
@@ -626,7 +644,7 @@ const _default: OverridableFrontendPlugin<
 >;
 export default _default;
 
-// @alpha (undocumented)
+// @public (undocumented)
 export class DefaultScaffolderFormDecoratorsApi
   implements ScaffolderFormDecoratorsApi
 {
@@ -638,7 +656,7 @@ export class DefaultScaffolderFormDecoratorsApi
   getFormDecorators(): Promise<ScaffolderFormDecorator[]>;
 }
 
-// @alpha (undocumented)
+// @public (undocumented)
 export const formDecoratorsApi: OverridableExtensionDefinition<{
   config: {};
   configInput: {};
@@ -668,7 +686,7 @@ export const formDecoratorsApi: OverridableExtensionDefinition<{
   ) => ExtensionBlueprintParams<AnyApiFactory>;
 }>;
 
-// @alpha (undocumented)
+// @public (undocumented)
 export const formDecoratorsApiRef: ApiRef<ScaffolderFormDecoratorsApi> & {
   readonly $$type: '@backstage/ApiRef';
 };
@@ -688,7 +706,7 @@ export type ScaffolderCustomFieldExplorerClassKey =
   | 'fieldForm'
   | 'preview';
 
-// @alpha (undocumented)
+// @public (undocumented)
 export interface ScaffolderFormDecoratorsApi {
   // (undocumented)
   getFormDecorators(): Promise<ScaffolderFormDecorator[]>;
@@ -806,6 +824,7 @@ export const scaffolderTranslationRef: TranslationRef<
     readonly 'renderSchema.undefined': 'No schema defined';
     readonly 'renderSchema.tableCell.name': 'Name';
     readonly 'renderSchema.tableCell.type': 'Type';
+    readonly 'renderSchema.tableCell.value': 'Value';
     readonly 'renderSchema.tableCell.title': 'Title';
     readonly 'renderSchema.tableCell.description': 'Description';
     readonly 'templatingExtensions.content.values.title': 'Values';

@@ -67,3 +67,16 @@ export const metricsServiceRef = createServiceRef<
 >({
   id: 'alpha.core.metrics',
 });
+
+/**
+ * Service for managing trace spans.
+ *
+ * See {@link TracingService} for the API surface.
+ *
+ * @alpha
+ */
+export const tracingServiceRef = createServiceRef<
+  import('./TracingService').TracingService
+>({
+  id: 'alpha.core.tracing',
+});

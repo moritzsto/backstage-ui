@@ -1,5 +1,34 @@
 # @backstage/plugin-kubernetes
 
+## 0.12.19-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.10-next.0
+  - @backstage/plugin-catalog-react@2.1.5-next.0
+  - @backstage/frontend-plugin-api@0.17.0-next.0
+  - @backstage/plugin-kubernetes-react@0.5.19-next.0
+  - @backstage/catalog-model@1.8.1-next.0
+  - @backstage/core-plugin-api@1.12.6-next.0
+  - @backstage/plugin-kubernetes-common@0.9.12-next.0
+  - @backstage/plugin-permission-react@0.5.1-next.0
+
+## 0.12.18
+
+### Patch Changes
+
+- d156cf4: Added `title` and `icon` to the new frontend system plugin definition.
+- Updated dependencies
+  - @backstage/catalog-model@1.8.0
+  - @backstage/plugin-catalog-react@2.1.2
+  - @backstage/frontend-plugin-api@0.16.0
+  - @backstage/core-components@0.18.9
+  - @backstage/plugin-permission-react@0.5.0
+  - @backstage/core-plugin-api@1.12.5
+  - @backstage/plugin-kubernetes-common@0.9.11
+  - @backstage/plugin-kubernetes-react@0.5.18
+
 ## 0.12.18-next.2
 
 ### Patch Changes

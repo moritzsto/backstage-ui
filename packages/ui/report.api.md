@@ -8,12 +8,16 @@ import { CellProps as CellProps_2 } from 'react-aria-components';
 import type { CheckboxGroupProps as CheckboxGroupProps_2 } from 'react-aria-components';
 import type { CheckboxProps as CheckboxProps_2 } from 'react-aria-components';
 import { ColumnProps as ColumnProps_2 } from 'react-aria-components';
-import type { ColumnSize } from '@react-types/table';
-import type { ColumnStaticSize } from '@react-types/table';
+import type { ColumnSize } from 'react-stately';
+import type { ColumnStaticSize } from 'react-stately';
+import type { ComboBoxProps } from 'react-aria-components';
 import type { ComponentProps } from 'react';
 import type { ComponentPropsWithoutRef } from 'react';
 import type { ComponentPropsWithRef } from 'react';
 import type { CSSProperties } from 'react';
+import type { DatePickerProps as DatePickerProps_2 } from 'react-aria-components';
+import type { DateRangePickerProps as DateRangePickerProps_2 } from 'react-aria-components';
+import type { DateValue } from '@internationalized/date';
 import type { DialogTriggerProps as DialogTriggerProps_2 } from 'react-aria-components';
 import type { DisclosureGroupProps } from 'react-aria-components';
 import type { DisclosurePanelProps } from 'react-aria-components';
@@ -222,6 +226,9 @@ export const AlertDefinition: {
       readonly dataAttribute: true;
       readonly default: 'info';
     };
+    readonly isPending: {
+      readonly dataAttribute: true;
+    };
     readonly loading: {
       readonly dataAttribute: true;
     };
@@ -239,6 +246,7 @@ export const AlertDefinition: {
 export type AlertOwnProps = {
   status?: Responsive<'info' | 'success' | 'warning' | 'danger'>;
   icon?: boolean | ReactElement;
+  isPending?: boolean;
   loading?: boolean;
   customActions?: ReactNode;
   title?: ReactNode;
@@ -431,6 +439,9 @@ export const BoxDefinition: {
     'py',
     'position',
     'display',
+    'grow',
+    'shrink',
+    'basis',
     'width',
     'minWidth',
     'maxWidth',
@@ -452,6 +463,7 @@ export type BoxOwnProps = {
 // @public (undocumented)
 export interface BoxProps
   extends SpaceProps,
+    FlexItemProps,
     BoxOwnProps,
     BoxUtilityProps,
     Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {}
@@ -510,6 +522,9 @@ export const ButtonDefinition: {
     readonly destructive: {
       readonly dataAttribute: true;
     };
+    readonly isPending: {
+      readonly dataAttribute: true;
+    };
     readonly loading: {
       readonly dataAttribute: true;
     };
@@ -545,6 +560,9 @@ export const ButtonIconDefinition: {
       readonly dataAttribute: true;
       readonly default: 'primary';
     };
+    readonly isPending: {
+      readonly dataAttribute: true;
+    };
     readonly loading: {
       readonly dataAttribute: true;
     };
@@ -558,6 +576,7 @@ export type ButtonIconOwnProps = {
   size?: Responsive<'small' | 'medium'>;
   variant?: Responsive<'primary' | 'secondary' | 'tertiary'>;
   icon?: ReactElement;
+  isPending?: boolean;
   loading?: boolean;
   className?: string;
 };
@@ -583,7 +602,6 @@ export const ButtonLinkDefinition: {
   };
   readonly bg: 'consumer';
   readonly analytics: true;
-  readonly resolveHref: true;
   readonly propDefs: {
     readonly noTrack: {};
     readonly size: {
@@ -624,6 +642,7 @@ export type ButtonOwnProps = {
   destructive?: boolean;
   iconStart?: ReactElement;
   iconEnd?: ReactElement;
+  isPending?: boolean;
   loading?: boolean;
   children?: ReactNode;
   className?: string;
@@ -643,6 +662,7 @@ export const Card: ForwardRefExoticComponent<
 export type CardBaseProps = {
   children?: ReactNode;
   className?: string;
+  style?: CSSProperties;
 };
 
 // @public
@@ -690,7 +710,6 @@ export const CardDefinition: {
   readonly styles: {
     readonly [key: string]: string;
   };
-  readonly resolveHref: true;
   readonly classNames: {
     readonly root: 'bui-Card';
     readonly trigger: 'bui-CardTrigger';
@@ -704,7 +723,9 @@ export const CardDefinition: {
     readonly target: {};
     readonly rel: {};
     readonly download: {};
+    readonly style: {};
   };
+  readonly utilityProps: readonly ['grow', 'shrink', 'basis'];
 };
 
 // @public
@@ -788,10 +809,12 @@ export type CardOwnProps = Pick<
   | 'target'
   | 'rel'
   | 'download'
+  | 'style'
 >;
 
 // @public
 export type CardProps = CardBaseProps &
+  FlexItemProps &
   Omit<React.HTMLAttributes<HTMLDivElement>, 'onClick'> &
   (CardButtonVariant | CardLinkVariant | CardStaticVariant);
 
@@ -987,6 +1010,111 @@ export type Columns =
   | '12'
   | 'auto';
 
+// @public
+export const Combobox: ForwardRefExoticComponent<
+  ComboboxProps & RefAttributes<HTMLDivElement>
+>;
+
+// @public
+export const ComboboxDefinition: {
+  readonly styles: {
+    readonly [key: string]: string;
+  };
+  readonly classNames: {
+    readonly root: 'bui-Combobox';
+    readonly popover: 'bui-ComboboxPopover';
+  };
+  readonly propDefs: {
+    readonly icon: {};
+    readonly size: {
+      readonly dataAttribute: true;
+      readonly default: 'small';
+    };
+    readonly options: {};
+    readonly placeholder: {};
+    readonly label: {};
+    readonly secondaryLabel: {};
+    readonly description: {};
+    readonly isRequired: {};
+    readonly className: {};
+  };
+};
+
+// @public
+export const ComboboxInputDefinition: {
+  readonly styles: {
+    readonly [key: string]: string;
+  };
+  readonly classNames: {
+    readonly root: 'bui-ComboboxInput';
+    readonly icon: 'bui-ComboboxInputIcon';
+    readonly input: 'bui-ComboboxInputField';
+    readonly chevron: 'bui-ComboboxInputChevron';
+  };
+  readonly bg: 'consumer';
+  readonly propDefs: {
+    readonly icon: {};
+    readonly placeholder: {};
+  };
+};
+
+// @public
+export const ComboboxListBoxDefinition: {
+  readonly styles: {
+    readonly [key: string]: string;
+  };
+  readonly classNames: {
+    readonly root: 'bui-ComboboxList';
+    readonly noResults: 'bui-ComboboxNoResults';
+  };
+  readonly propDefs: {
+    readonly options: {};
+  };
+};
+
+// @public
+export const ComboboxListBoxItemDefinition: {
+  readonly styles: {
+    readonly [key: string]: string;
+  };
+  readonly classNames: {
+    readonly root: 'bui-ComboboxItem';
+    readonly indicator: 'bui-ComboboxItemIndicator';
+    readonly label: 'bui-ComboboxItemLabel';
+  };
+  readonly propDefs: {};
+};
+
+// @public (undocumented)
+export type ComboboxOwnProps = {
+  icon?: ReactNode;
+  size?: 'small' | 'medium' | Partial<Record<Breakpoint, 'small' | 'medium'>>;
+  options?: Array<Option_2 | OptionSection>;
+  placeholder?: string;
+  label?: FieldLabelProps['label'];
+  secondaryLabel?: FieldLabelProps['secondaryLabel'];
+  description?: FieldLabelProps['description'];
+  isRequired?: boolean;
+  className?: string;
+};
+
+// @public (undocumented)
+export interface ComboboxProps
+  extends ComboboxOwnProps,
+    Omit<ComboBoxProps<Option_2>, keyof ComboboxOwnProps> {}
+
+// @public
+export const ComboboxSectionDefinition: {
+  readonly styles: {
+    readonly [key: string]: string;
+  };
+  readonly classNames: {
+    readonly root: 'bui-ComboboxSection';
+    readonly header: 'bui-ComboboxSectionHeader';
+  };
+  readonly propDefs: {};
+};
+
 // @public (undocumented)
 export interface CompletePaginationOptions extends PaginationOptions {
   // (undocumented)
@@ -1085,6 +1213,118 @@ export interface CursorResponse<T> {
 }
 
 // @public
+export const DatePicker: ForwardRefExoticComponent<
+  DatePickerProps & RefAttributes<HTMLDivElement>
+>;
+
+// @public
+export const DatePickerCalendarDefinition: {
+  readonly styles: {
+    readonly [key: string]: string;
+  };
+  readonly classNames: {
+    readonly root: 'bui-DatePickerCalendar';
+    readonly header: 'bui-DatePickerCalendarHeader';
+    readonly heading: 'bui-DatePickerCalendarHeading';
+    readonly navButton: 'bui-DatePickerCalendarNavButton';
+    readonly grid: 'bui-DatePickerCalendarGrid';
+    readonly gridHeader: 'bui-DatePickerCalendarGridHeader';
+    readonly headerCell: 'bui-DatePickerCalendarHeaderCell';
+    readonly gridBody: 'bui-DatePickerCalendarGridBody';
+    readonly cell: 'bui-DatePickerCalendarCell';
+  };
+  readonly propDefs: {};
+};
+
+// @public
+export const DatePickerDefinition: {
+  readonly styles: {
+    readonly [key: string]: string;
+  };
+  readonly classNames: {
+    readonly root: 'bui-DatePicker';
+  };
+  readonly propDefs: {
+    readonly size: {
+      readonly dataAttribute: true;
+      readonly default: 'small';
+    };
+    readonly className: {};
+    readonly label: {};
+    readonly description: {};
+    readonly secondaryLabel: {};
+  };
+};
+
+// @public
+export const DatePickerGroupDefinition: {
+  readonly styles: {
+    readonly [key: string]: string;
+  };
+  readonly classNames: {
+    readonly root: 'bui-DatePickerGroup';
+    readonly dateInput: 'bui-DatePickerDateInput';
+    readonly segment: 'bui-DatePickerSegment';
+    readonly button: 'bui-DatePickerButton';
+  };
+  readonly bg: 'consumer';
+  readonly propDefs: {};
+};
+
+// @public (undocumented)
+export type DatePickerOwnProps = {
+  size?: 'small' | 'medium' | Partial<Record<Breakpoint, 'small' | 'medium'>>;
+  className?: string;
+  label?: FieldLabelProps['label'];
+  description?: FieldLabelProps['description'];
+  secondaryLabel?: FieldLabelProps['secondaryLabel'];
+};
+
+// @public (undocumented)
+export interface DatePickerProps
+  extends Omit<DatePickerProps_2<DateValue>, 'className' | 'children'>,
+    DatePickerOwnProps {}
+
+// @public
+export const DateRangePicker: ForwardRefExoticComponent<
+  DateRangePickerProps & RefAttributes<HTMLDivElement>
+>;
+
+// @public
+export const DateRangePickerDefinition: {
+  readonly styles: {
+    readonly [key: string]: string;
+  };
+  readonly classNames: {
+    readonly root: 'bui-DateRangePicker';
+  };
+  readonly propDefs: {
+    readonly size: {
+      readonly dataAttribute: true;
+      readonly default: 'small';
+    };
+    readonly className: {};
+    readonly label: {};
+    readonly description: {};
+    readonly secondaryLabel: {};
+  };
+};
+
+// @public (undocumented)
+export type DateRangePickerOwnProps = {
+  size?: 'small' | 'medium' | Partial<Record<Breakpoint, 'small' | 'medium'>>;
+  className?: string;
+  label?: FieldLabelProps['label'];
+  description?: FieldLabelProps['description'];
+  secondaryLabel?: FieldLabelProps['secondaryLabel'];
+};
+
+// @public (undocumented)
+export interface DateRangePickerProps
+  extends Omit<DateRangePickerProps_2<DateValue>, 'className' | 'children'>,
+    DateRangePickerOwnProps {}
+
+// @public
 export const Dialog: ForwardRefExoticComponent<
   DialogProps & RefAttributes<HTMLDivElement>
 >;
@@ -1126,7 +1366,8 @@ export const DialogDefinition: {
   };
   readonly classNames: {
     readonly root: 'bui-DialogOverlay';
-    readonly dialog: 'bui-Dialog';
+    readonly container: 'bui-Dialog';
+    readonly inner: 'bui-DialogInner';
     readonly content: 'bui-DialogContent';
   };
   readonly propDefs: {
@@ -1245,6 +1486,7 @@ export const FieldLabelDefinition: {
     readonly htmlFor: {};
     readonly id: {};
     readonly descriptionId: {};
+    readonly descriptionSlot: {};
     readonly className: {};
   };
 };
@@ -1257,6 +1499,7 @@ export type FieldLabelOwnProps = {
   htmlFor?: string;
   id?: string;
   descriptionId?: string;
+  descriptionSlot?: string;
   className?: string;
 };
 
@@ -1314,11 +1557,21 @@ export const FlexDefinition: {
     'align',
     'justify',
     'direction',
+    'grow',
+    'shrink',
+    'basis',
   ];
 };
 
 // @public (undocumented)
 export type FlexDirection = 'row' | 'column';
+
+// @public
+export interface FlexItemProps {
+  basis?: Responsive<CSSProperties['flexBasis']>;
+  grow?: Responsive<number | boolean>;
+  shrink?: Responsive<number | boolean>;
+}
 
 // @public (undocumented)
 export type FlexOwnProps = {
@@ -1331,6 +1584,7 @@ export type FlexOwnProps = {
 // @public (undocumented)
 export interface FlexProps
   extends SpaceProps,
+    FlexItemProps,
     FlexOwnProps,
     Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
   // (undocumented)
@@ -1421,6 +1675,9 @@ export const GridDefinition: {
     'pt',
     'px',
     'py',
+    'grow',
+    'shrink',
+    'basis',
   ];
 };
 
@@ -1477,6 +1734,7 @@ export type GridOwnProps = {
 // @public (undocumented)
 export interface GridProps
   extends SpaceProps,
+    FlexItemProps,
     GridOwnProps,
     Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
   // (undocumented)
@@ -1501,12 +1759,27 @@ export const HeaderDefinition: {
   readonly styles: {
     readonly [key: string]: string;
   };
+  readonly bg: 'consumer';
   readonly classNames: {
-    readonly root: 'bui-Header';
+    readonly headerTop: 'bui-HeaderTop';
+    readonly stickySentinel: 'bui-HeaderStickySentinel';
     readonly content: 'bui-HeaderContent';
+    readonly headerBottom: 'bui-HeaderBottom';
     readonly breadcrumbs: 'bui-HeaderBreadcrumbs';
+    readonly breadcrumbsSmall: 'bui-HeaderBreadcrumbsSmall';
+    readonly breadcrumbLink: 'bui-HeaderBreadcrumbLink';
+    readonly breadcrumbLinkSmall: 'bui-HeaderBreadcrumbLinkSmall';
+    readonly breadcrumbSeparator: 'bui-HeaderBreadcrumbSeparator';
+    readonly titleStack: 'bui-HeaderTitleStack';
+    readonly title: 'bui-HeaderTitle';
+    readonly titleSmall: 'bui-HeaderTitleSmall';
     readonly tabsWrapper: 'bui-HeaderTabsWrapper';
     readonly controls: 'bui-HeaderControls';
+    readonly tags: 'bui-HeaderTags';
+    readonly tag: 'bui-HeaderTag';
+    readonly description: 'bui-HeaderDescription';
+    readonly metaRow: 'bui-HeaderMetaRow';
+    readonly metaItem: 'bui-HeaderMetaItem';
   };
   readonly propDefs: {
     readonly title: {};
@@ -1514,9 +1787,51 @@ export const HeaderDefinition: {
     readonly tabs: {};
     readonly activeTabId: {};
     readonly breadcrumbs: {};
+    readonly description: {};
+    readonly tags: {};
+    readonly metadata: {};
     readonly className: {};
+    readonly sticky: {};
   };
 };
+
+// @public
+export interface HeaderMetadataItem {
+  // (undocumented)
+  label: string;
+  // (undocumented)
+  value: React.ReactNode;
+}
+
+// @public
+export const HeaderMetadataStatus: (
+  input: HeaderMetadataStatusProps,
+) => JSX_2.Element;
+
+// @public
+export interface HeaderMetadataStatusProps {
+  // (undocumented)
+  color: 'danger' | 'warning' | 'success' | 'info';
+  // (undocumented)
+  href?: string;
+  // (undocumented)
+  label: string;
+}
+
+// @public
+export interface HeaderMetadataUser {
+  // (undocumented)
+  href?: string;
+  // (undocumented)
+  name: string;
+  // (undocumented)
+  src?: string;
+}
+
+// @public
+export const HeaderMetadataUsers: (input: {
+  users: HeaderMetadataUser[];
+}) => JSX_2.Element | null;
 
 // @public (undocumented)
 export const HeaderNavDefinition: {
@@ -1559,7 +1874,6 @@ export const HeaderNavItemDefinition: {
     readonly root: 'bui-HeaderNavItem';
   };
   readonly analytics: true;
-  readonly resolveHref: true;
   readonly propDefs: {
     readonly noTrack: {};
     readonly id: {};
@@ -1599,14 +1913,20 @@ export type HeaderNavTabItem = HeaderNavTab | HeaderNavTabGroup;
 export interface HeaderOwnProps {
   // (undocumented)
   activeTabId?: string | null;
-  // (undocumented)
+  // @deprecated (undocumented)
   breadcrumbs?: HeaderBreadcrumb[];
   // (undocumented)
   className?: string;
   // (undocumented)
   customActions?: React.ReactNode;
+  description?: string;
+  // (undocumented)
+  metadata?: HeaderMetadataItem[];
+  sticky?: boolean;
   // (undocumented)
   tabs?: HeaderNavTabItem[];
+  // (undocumented)
+  tags?: HeaderTag[];
   // (undocumented)
   title?: string;
 }
@@ -1622,12 +1942,27 @@ export const HeaderPageDefinition: {
   readonly styles: {
     readonly [key: string]: string;
   };
+  readonly bg: 'consumer';
   readonly classNames: {
-    readonly root: 'bui-Header';
+    readonly headerTop: 'bui-HeaderTop';
+    readonly stickySentinel: 'bui-HeaderStickySentinel';
     readonly content: 'bui-HeaderContent';
+    readonly headerBottom: 'bui-HeaderBottom';
     readonly breadcrumbs: 'bui-HeaderBreadcrumbs';
+    readonly breadcrumbsSmall: 'bui-HeaderBreadcrumbsSmall';
+    readonly breadcrumbLink: 'bui-HeaderBreadcrumbLink';
+    readonly breadcrumbLinkSmall: 'bui-HeaderBreadcrumbLinkSmall';
+    readonly breadcrumbSeparator: 'bui-HeaderBreadcrumbSeparator';
+    readonly titleStack: 'bui-HeaderTitleStack';
+    readonly title: 'bui-HeaderTitle';
+    readonly titleSmall: 'bui-HeaderTitleSmall';
     readonly tabsWrapper: 'bui-HeaderTabsWrapper';
     readonly controls: 'bui-HeaderControls';
+    readonly tags: 'bui-HeaderTags';
+    readonly tag: 'bui-HeaderTag';
+    readonly description: 'bui-HeaderDescription';
+    readonly metaRow: 'bui-HeaderMetaRow';
+    readonly metaItem: 'bui-HeaderMetaItem';
   };
   readonly propDefs: {
     readonly title: {};
@@ -1635,7 +1970,11 @@ export const HeaderPageDefinition: {
     readonly tabs: {};
     readonly activeTabId: {};
     readonly breadcrumbs: {};
+    readonly description: {};
+    readonly tags: {};
+    readonly metadata: {};
     readonly className: {};
+    readonly sticky: {};
   };
 };
 
@@ -1657,6 +1996,14 @@ export interface HeaderTab {
   // (undocumented)
   label: string;
   matchStrategy?: TabMatchStrategy;
+}
+
+// @public
+export interface HeaderTag {
+  // (undocumented)
+  href?: string;
+  // (undocumented)
+  label: string;
 }
 
 // @public (undocumented)
@@ -1682,7 +2029,6 @@ export const LinkDefinition: {
     readonly root: 'bui-Link';
   };
   readonly analytics: true;
-  readonly resolveHref: true;
   readonly propDefs: {
     readonly noTrack: {};
     readonly variant: {
@@ -1771,7 +2117,6 @@ export const ListRowDefinition: {
     readonly [key: string]: string;
   };
   readonly bg: 'consumer';
-  readonly resolveHref: true;
   readonly classNames: {
     readonly root: 'bui-ListRow';
     readonly check: 'bui-ListRowCheck';
@@ -2017,6 +2362,12 @@ type Option_2 = {
 export { Option_2 as Option };
 
 // @public (undocumented)
+export type OptionSection = {
+  title: string;
+  options: Option_2[];
+};
+
+// @public (undocumented)
 export interface PaddingProps {
   // (undocumented)
   p?: Responsive<Space>;
@@ -2084,6 +2435,7 @@ export const PasswordFieldDefinition: {
     readonly inputIcon: 'bui-PasswordFieldIcon';
     readonly inputVisibility: 'bui-PasswordFieldVisibility';
   };
+  readonly bg: 'consumer';
   readonly propDefs: {
     readonly size: {
       readonly dataAttribute: true;
@@ -2502,7 +2854,7 @@ export const SelectDefinition: {
 export type SelectOwnProps = {
   icon?: ReactNode;
   size?: 'small' | 'medium' | Partial<Record<Breakpoint, 'small' | 'medium'>>;
-  options?: Array<Option_2>;
+  options?: Array<Option_2 | OptionSection>;
   searchable?: boolean;
   searchPlaceholder?: string;
   label?: FieldLabelProps['label'];
@@ -2701,6 +3053,13 @@ export interface TableBodyProps<T extends object>
     Omit<TableBodyProps_2<T>, keyof TableBodyOwnProps> {}
 
 // @public
+export function TableBodySkeleton<
+  T extends {
+    id: string;
+  },
+>(input: { columns: readonly T[] }): JSX_2.Element;
+
+// @public
 export const TableDefinition: {
   readonly styles: {
     readonly [key: string]: string;
@@ -2710,6 +3069,9 @@ export const TableDefinition: {
   };
   readonly propDefs: {
     readonly stale: {
+      readonly dataAttribute: true;
+    };
+    readonly isPending: {
       readonly dataAttribute: true;
     };
     readonly loading: {
@@ -2815,8 +3177,10 @@ export interface TableProps<T extends TableItem> {
   // (undocumented)
   error?: Error;
   // (undocumented)
-  isStale?: boolean;
+  isPending?: boolean;
   // (undocumented)
+  isStale?: boolean;
+  // @deprecated (undocumented)
   loading?: boolean;
   // (undocumented)
   pagination: TablePaginationType;
@@ -2838,6 +3202,7 @@ export const TableRoot: (props: TableRootProps) => JSX_2.Element;
 // @public (undocumented)
 export type TableRootOwnProps = {
   stale?: boolean;
+  isPending?: boolean;
   loading?: boolean;
 };
 
@@ -3279,6 +3644,8 @@ export type UseTableCompleteOptions<
   sortFn?: (data: T[], sort: SortDescriptor) => T[];
   filterFn?: (data: T[], filter: TFilter) => T[];
   searchFn?: (data: T[], search: string) => T[];
+  searchDebounceMs?: number;
+  filterDebounceMs?: number;
 } & (
     | {
         data: T[] | undefined;

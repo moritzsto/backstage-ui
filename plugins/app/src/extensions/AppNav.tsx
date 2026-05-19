@@ -188,6 +188,14 @@ function NavContentRenderer(props: {
         return [];
       }
 
+      // TODO: Nav items are deprecated, and this code covers for a documented ability to use nav items still in config to disable pages in the sidebar.
+      // Remove this code once nav items are completely gone from the codebase.
+      const navItemNodeId = node.spec.id.replace(/^page:/, 'nav-item:');
+      const navItemNode = tree.nodes.get(navItemNodeId);
+      if (navItemNode?.spec.disabled) {
+        return [];
+      }
+
       const routeRef = node.instance.getData(coreExtensionData.routeRef);
       if (!routeRef) {
         return [];

@@ -248,6 +248,10 @@ Changesets are an important part of the development process. They are used to ge
 
 Here are some important do's and don'ts when writing changesets:
 
+### Changeset messages should describe user-facing behavior in plain language
+
+Changeset messages are read by Backstage adopters, not contributors. They should describe what changed from the user's perspective, not how the code was changed internally. Never reference internal implementation details such as function names, class names, variable names, or other code symbols that are not part of the public API. Public API names (exported functions, components, types, etc.) are fine to mention, but internal code structure should not appear in changeset messages.
+
 ### Changeset should give a clear description to what has changed
 
 #### Bad
