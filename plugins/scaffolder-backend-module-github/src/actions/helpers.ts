@@ -341,9 +341,19 @@ export async function initRepoPushAndProtect(
     });
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code;
-    if (code === 'ECONNRESET' || code === 'HttpError') {
+    const causeCode = (
+      (error as NodeJS.ErrnoException).cause as
+        | NodeJS.ErrnoException
+        | undefined
+    )?.code;
+    const isConnectionError =
+      code === 'ECONNRESET' ||
+      code === 'ECONNREFUSED' ||
+      causeCode === 'ECONNRESET' ||
+      causeCode === 'ECONNREFUSED';
+    if (isConnectionError) {
       logger.warn(
-        `Git push failed with ${code}, retrying via GitHub API. ` +
+        `Git push failed with ${code ?? causeCode}, retrying via GitHub API. ` +
           'This can happen when a network proxy blocks the binary payload ' +
           'in the git smart HTTP protocol.',
       );
@@ -354,7 +364,6 @@ export async function initRepoPushAndProtect(
         client,
         defaultBranch,
         commitMessage,
-        gitAuthorInfo,
         logger,
       });
     } else {
@@ -438,7 +447,6 @@ async function pushFilesViaGitHubApi(input: {
   client: Octokit;
   defaultBranch: string;
   commitMessage: string;
-  gitAuthorInfo?: { name?: string; email?: string };
   logger: LoggerService;
 }): Promise<{ commitHash: string }> {
   const { dir, owner, repo, client, defaultBranch, commitMessage, logger } =
@@ -448,6 +456,7 @@ async function pushFilesViaGitHubApi(input: {
   logger.info(`Collected ${files.length} files for API push`);
 
   let headOid: string;
+  let needsCleanup = false;
   try {
     const { data: ref } = await client.rest.git.getRef({
       owner,
@@ -455,7 +464,11 @@ async function pushFilesViaGitHubApi(input: {
       ref: `heads/${defaultBranch}`,
     });
     headOid = ref.object.sha;
-  } catch {
+  } catch (refError: unknown) {
+    const status = (refError as { status?: number }).status;
+    if (status !== 404) {
+      throw refError;
+    }
     logger.info(
       `No existing HEAD found for ${owner}/${repo}#${defaultBranch}, ` +
         'initializing repository',
@@ -469,12 +482,23 @@ async function pushFilesViaGitHubApi(input: {
       branch: defaultBranch,
     });
     headOid = init.commit.sha!;
+    needsCleanup = true;
   }
 
   const additions = files.map(file => ({
     path: file.filePath,
     contents: file.content.toString('base64'),
   }));
+
+  const fileChanges: {
+    additions: typeof additions;
+    deletions?: { path: string }[];
+  } = {
+    additions,
+  };
+  if (needsCleanup) {
+    fileChanges.deletions = [{ path: '.gitkeep' }];
+  }
 
   const result: {
     createCommitOnBranch: { commit: { oid: string } };
@@ -485,7 +509,7 @@ async function pushFilesViaGitHubApi(input: {
         branchName: defaultBranch,
       },
       message: { headline: commitMessage },
-      fileChanges: { additions },
+      fileChanges,
       expectedHeadOid: headOid,
     },
   });

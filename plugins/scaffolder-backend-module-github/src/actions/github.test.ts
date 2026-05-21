@@ -1980,7 +1980,10 @@ describe('publish:github', () => {
       Buffer.from('content'),
     );
 
-    mockOctokit.rest.git.getRef.mockRejectedValue(new Error('Not Found'));
+    const notFoundError = Object.assign(new Error('Not Found'), {
+      status: 404,
+    });
+    mockOctokit.rest.git.getRef.mockRejectedValue(notFoundError);
     mockOctokit.rest.repos.createOrUpdateFileContents.mockResolvedValue({
       data: { commit: { sha: 'init-sha' } },
     });
@@ -2007,6 +2010,9 @@ describe('publish:github', () => {
       expect.objectContaining({
         input: expect.objectContaining({
           expectedHeadOid: 'init-sha',
+          fileChanges: expect.objectContaining({
+            deletions: [{ path: '.gitkeep' }],
+          }),
         }),
       }),
     );
