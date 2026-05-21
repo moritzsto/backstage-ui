@@ -497,10 +497,18 @@ export async function createRouter(
       user: user,
     };
     if (req.query.offset) {
-      opts.offset = Number.parseInt(req.query.offset.toString(), 10);
+      const offset = Number.parseInt(req.query.offset.toString(), 10);
+      if (isNaN(offset) || offset < 0) {
+        throw new InputError('Offset must be a non-negative integer');
+      }
+      opts.offset = offset;
     }
     if (req.query.limit) {
-      opts.limit = Number.parseInt(req.query.limit.toString(), 10);
+      const limit = Number.parseInt(req.query.limit.toString(), 10);
+      if (isNaN(limit) || limit <= 0 || limit > 100) {
+        throw new InputError('Limit must be a positive integer <= 100');
+      }
+      opts.limit = limit;
     }
     if (req.query.orderField) {
       opts.orderField = parseEntityOrderFieldParams(req.query);
