@@ -20,9 +20,7 @@ import { McpService } from '../services/McpService';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { LATEST_PROTOCOL_VERSION } from '@modelcontextprotocol/sdk/types.js';
 import { toError } from '@backstage/errors';
-import {
-  TracingService,
-} from '@backstage/backend-plugin-api/alpha';
+import { TracingService } from '@backstage/backend-plugin-api/alpha';
 import {
   AuditorService,
   AuditorServiceEvent,
