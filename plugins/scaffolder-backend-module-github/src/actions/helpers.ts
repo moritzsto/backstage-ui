@@ -324,64 +324,41 @@ export async function initRepoPushAndProtect(
   const commitMessage =
     getGitCommitMessage(gitCommitMessage, config) || 'initial commit';
 
-  const useApiPush =
-    process.env.HTTP_PROXY ||
-    process.env.HTTPS_PROXY ||
-    process.env.http_proxy ||
-    process.env.https_proxy;
-
   let commitResult: { commitHash: string };
 
-  if (useApiPush) {
-    logger.info(
-      'HTTP proxy detected, pushing via GitHub API to avoid ' +
-        'potential issues with the git smart HTTP protocol.',
-    );
-    commitResult = await pushFilesViaGitHubApi({
+  try {
+    commitResult = await initRepoAndPush({
       dir: getRepoSourceDirectory(workspacePath, sourcePath),
-      owner,
-      repo,
-      client,
+      remoteUrl,
       defaultBranch,
+      auth: {
+        username: 'x-access-token',
+        password,
+      },
+      logger,
       commitMessage,
       gitAuthorInfo,
-      logger,
     });
-  } else {
-    try {
-      commitResult = await initRepoAndPush({
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === 'ECONNRESET' || code === 'HttpError') {
+      logger.warn(
+        `Git push failed with ${code}, retrying via GitHub API. ` +
+          'This can happen when a network proxy blocks the binary payload ' +
+          'in the git smart HTTP protocol.',
+      );
+      commitResult = await pushFilesViaGitHubApi({
         dir: getRepoSourceDirectory(workspacePath, sourcePath),
-        remoteUrl,
+        owner,
+        repo,
+        client,
         defaultBranch,
-        auth: {
-          username: 'x-access-token',
-          password,
-        },
-        logger,
         commitMessage,
         gitAuthorInfo,
+        logger,
       });
-    } catch (error) {
-      const code = (error as NodeJS.ErrnoException).code;
-      if (code === 'ECONNRESET' || code === 'HttpError') {
-        logger.warn(
-          `Git push failed with ${code}, retrying via GitHub API. ` +
-            'This can happen when a network proxy blocks the binary payload ' +
-            'in the git smart HTTP protocol.',
-        );
-        commitResult = await pushFilesViaGitHubApi({
-          dir: getRepoSourceDirectory(workspacePath, sourcePath),
-          owner,
-          repo,
-          client,
-          defaultBranch,
-          commitMessage,
-          gitAuthorInfo,
-          logger,
-        });
-      } else {
-        throw error;
-      }
+    } else {
+      throw error;
     }
   }
 
