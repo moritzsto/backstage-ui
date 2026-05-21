@@ -309,9 +309,9 @@ export class McpService {
               await auditorEvent.fail({
                 error: new Error(errorDescription),
               });
+            } else {
+              await auditorEvent.success();
             }
-
-            await auditorEvent.success();
 
             return result;
           },
