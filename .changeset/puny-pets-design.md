@@ -1,6 +1,5 @@
 ---
 '@backstage/plugin-auth-backend-module-vmware-cloud-provider': patch
-'@backstage/plugin-auth-backend-module-microsoft-provider': patch
 '@backstage/plugin-auth-backend-module-oidc-provider': patch
 ---
 
