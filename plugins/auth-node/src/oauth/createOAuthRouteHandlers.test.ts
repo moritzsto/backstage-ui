@@ -1095,7 +1095,6 @@ describe('createOAuthRouteHandlers', () => {
       );
 
       mockAuthenticator.refresh.mockImplementation(async ({ scope }) => ({
-        fullProfile: undefined as any,
         session: { ...mockSession, scope },
       }));
 
