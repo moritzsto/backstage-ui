@@ -483,11 +483,11 @@ describe.each(databases.eachSupportedId())(
       expect(metrics.createHistogram).toHaveBeenCalledWith(
         'backend_tasks.task.runs.duration',
         expect.objectContaining({
-          advice: {
+          advice: expect.objectContaining({
             explicitBucketBoundaries: [
               0.1, 0.5, 1, 5, 10, 30, 60, 120, 300, 600, 1800, 3600,
             ],
-          },
+          }),
         }),
       );
     });

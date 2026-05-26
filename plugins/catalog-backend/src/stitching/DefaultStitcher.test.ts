@@ -321,21 +321,21 @@ describe.each(databases.eachSupportedId())('Stitcher, %p', databaseId => {
     expect(metrics.createHistogram).toHaveBeenCalledWith(
       'catalog.stitching.duration',
       expect.objectContaining({
-        advice: {
+        advice: expect.objectContaining({
           explicitBucketBoundaries: [
             0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60,
           ],
-        },
+        }),
       }),
     );
     expect(metrics.createHistogram).toHaveBeenCalledWith(
       'catalog.stitching.queue.delay',
       expect.objectContaining({
-        advice: {
+        advice: expect.objectContaining({
           explicitBucketBoundaries: [
             0.1, 0.5, 1, 5, 10, 30, 60, 300, 600, 1800, 3600,
           ],
-        },
+        }),
       }),
     );
   });

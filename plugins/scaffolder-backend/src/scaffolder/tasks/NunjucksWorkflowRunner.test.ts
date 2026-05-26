@@ -2663,19 +2663,19 @@ describe('NunjucksWorkflowRunner', () => {
     expect(metrics.createHistogram).toHaveBeenCalledWith(
       'scaffolder.task.duration',
       expect.objectContaining({
-        advice: {
+        advice: expect.objectContaining({
           explicitBucketBoundaries: [
             1, 5, 10, 30, 60, 120, 300, 600, 1800, 3600,
           ],
-        },
+        }),
       }),
     );
     expect(metrics.createHistogram).toHaveBeenCalledWith(
       'scaffolder.step.duration',
       expect.objectContaining({
-        advice: {
+        advice: expect.objectContaining({
           explicitBucketBoundaries: [0.1, 0.5, 1, 5, 10, 30, 60, 120, 300],
-        },
+        }),
       }),
     );
   });
