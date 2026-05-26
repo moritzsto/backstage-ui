@@ -846,7 +846,6 @@ describe('DefaultCatalogProcessingEngine', () => {
       processingDatabase: db,
       knex: {} as any,
       orchestrator,
-      stitcher,
       createHash: () => hash,
       scheduler: mockServices.scheduler(),
       events: mockServices.events.mock(),

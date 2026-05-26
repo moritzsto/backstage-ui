@@ -311,7 +311,10 @@ describe.each(databases.eachSupportedId())('Stitcher, %p', databaseId => {
     void new DefaultStitcher({
       knex: {} as any,
       logger,
-      strategy: { mode: 'immediate' },
+      strategy: {
+        pollingInterval: { milliseconds: 50 },
+        stitchTimeout: { seconds: 10 },
+      },
       metrics,
     });
 
