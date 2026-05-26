@@ -358,7 +358,9 @@ export class DefaultCatalogProcessingEngine {
       return () => {};
     }
 
-    const stitchingStrategy = stitchingStrategyFromConfig(this.config);
+    const stitchingStrategy = stitchingStrategyFromConfig(this.config, {
+      logger: this.logger,
+    });
 
     const runOnce = async () => {
       try {

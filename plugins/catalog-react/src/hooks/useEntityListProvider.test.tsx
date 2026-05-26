@@ -299,6 +299,48 @@ describe('<EntityListProvider />', () => {
     });
   });
 
+  it('does not re-fetch when backend filter params are unchanged', async () => {
+    const deferred = createDeferred<GetEntitiesResponse>();
+    mockCatalogApi.getEntities!.mockReturnValueOnce(deferred);
+
+    const { result } = renderHook(() => useEntityList(), {
+      wrapper: createWrapper({ pagination }),
+    });
+
+    act(() => {
+      result.current.updateFilters({
+        kind: new EntityKindFilter('component', 'component'),
+      });
+    });
+
+    await waitFor(() => {
+      expect(mockCatalogApi.getEntities).toHaveBeenCalledTimes(1);
+    });
+
+    // While first fetch is in flight, fire more updateFilters calls
+    // that produce the same backend filter (kind=component).
+    act(() => {
+      result.current.updateFilters({
+        kind: new EntityKindFilter('component', 'Component'),
+      });
+    });
+    act(() => {
+      result.current.updateFilters({
+        user: EntityUserFilter.all(),
+      });
+    });
+
+    await act(async () => {
+      deferred.resolve({ items: entities });
+    });
+
+    await waitFor(() => {
+      expect(result.current.backendEntities.length).toBe(2);
+    });
+
+    expect(mockCatalogApi.getEntities).toHaveBeenCalledTimes(1);
+  });
+
   it('returns an error on catalogApi failure', async () => {
     const { result } = renderHook(() => useEntityList(), {
       wrapper: createWrapper({ pagination }),
