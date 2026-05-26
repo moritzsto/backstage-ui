@@ -2644,4 +2644,36 @@ describe('NunjucksWorkflowRunner', () => {
       );
     });
   });
+
+  it('creates scaffolding histograms with explicit second-scale bucket boundaries', () => {
+    const metrics = metricsServiceMock.mock();
+    const _runner = new NunjucksWorkflowRunner({
+      actionRegistry: new DefaultTemplateActionRegistry(),
+      integrations,
+      workingDirectory: mockDir.path,
+      logger,
+      permissions: mockedPermissionApi,
+      config: new ConfigReader({}),
+      metrics,
+    });
+
+    expect(metrics.createHistogram).toHaveBeenCalledWith(
+      'scaffolder.task.duration',
+      expect.objectContaining({
+        advice: {
+          explicitBucketBoundaries: [
+            1, 5, 10, 30, 60, 120, 300, 600, 1800, 3600,
+          ],
+        },
+      }),
+    );
+    expect(metrics.createHistogram).toHaveBeenCalledWith(
+      'scaffolder.step.duration',
+      expect.objectContaining({
+        advice: {
+          explicitBucketBoundaries: [0.1, 0.5, 1, 5, 10, 30, 60, 120, 300],
+        },
+      }),
+    );
+  });
 });

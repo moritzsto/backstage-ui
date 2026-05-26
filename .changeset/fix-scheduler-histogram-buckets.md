@@ -1,5 +1,5 @@
 ---
-'@backstage/backend-defaults': patch
+'@backstage/backend-defaults': minor
 ---
 
 **BREAKING** This change alters the bucket boundaries of the `backend_tasks.task.runs.duration` OpenTelemetry histogram metric. If you have dashboards or alerts that depend on specific bucket label values (e.g. `le="5"`) for this metric, they will need to be updated.
