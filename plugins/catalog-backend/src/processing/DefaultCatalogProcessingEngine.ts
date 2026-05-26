@@ -422,6 +422,9 @@ function progressTracker(metrics: MetricsService) {
   const processingDurationBuckets = [
     0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60,
   ];
+  const processingQueueDelayBuckets = [
+    0.1, 0.5, 1, 5, 10, 30, 60, 300, 600, 1800, 3600,
+  ];
 
   const processingDuration = metrics.createHistogram(
     'catalog.processing.duration',
@@ -452,9 +455,7 @@ function progressTracker(metrics: MetricsService) {
         'The amount of delay between being scheduled for processing, and the start of actually being processed',
       unit: 'seconds',
       advice: {
-        explicitBucketBoundaries: [
-          0.1, 0.5, 1, 5, 10, 30, 60, 300, 600, 1800, 3600,
-        ],
+        explicitBucketBoundaries: processingQueueDelayBuckets,
       },
     },
   );

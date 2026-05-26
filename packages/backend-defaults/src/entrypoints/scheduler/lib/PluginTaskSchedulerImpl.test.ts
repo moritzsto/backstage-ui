@@ -468,7 +468,7 @@ describe.each(databases.eachSupportedId())(
 
     it('creates task duration histogram with explicit second-scale bucket boundaries', () => {
       const metrics = metricsServiceMock.mock();
-      const _scheduler = new PluginTaskSchedulerImpl(
+      void new PluginTaskSchedulerImpl(
         'test',
         async () => ({} as any),
         mockServices.logger.mock(),

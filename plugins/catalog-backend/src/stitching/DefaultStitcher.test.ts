@@ -274,7 +274,7 @@ describe.each(databases.eachSupportedId())('Stitcher, %p', databaseId => {
 
   it('creates stitching histograms with explicit second-scale bucket boundaries', () => {
     const metrics = metricsServiceMock.mock();
-    const _stitcher = new DefaultStitcher({
+    void new DefaultStitcher({
       knex: {} as any,
       logger,
       strategy: { mode: 'immediate' },

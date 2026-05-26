@@ -2647,8 +2647,11 @@ describe('NunjucksWorkflowRunner', () => {
 
   it('creates scaffolding histograms with explicit second-scale bucket boundaries', () => {
     const metrics = metricsServiceMock.mock();
-    const _runner = new NunjucksWorkflowRunner({
-      actionRegistry: new DefaultTemplateActionRegistry(),
+    void new NunjucksWorkflowRunner({
+      actionRegistry: new DefaultTemplateActionRegistry(
+        actionsRegistryServiceMock(),
+        mockServices.logger.mock(),
+      ),
       integrations,
       workingDirectory: mockDir.path,
       logger,

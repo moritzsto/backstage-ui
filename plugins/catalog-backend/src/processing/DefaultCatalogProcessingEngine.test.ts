@@ -846,7 +846,7 @@ describe('DefaultCatalogProcessingEngine', () => {
 
   it('creates processing histograms with explicit second-scale bucket boundaries', () => {
     const metrics = metricsServiceMock.mock();
-    const _engine = new DefaultCatalogProcessingEngine({
+    void new DefaultCatalogProcessingEngine({
       config: new ConfigReader({}),
       logger: mockServices.logger.mock(),
       processingDatabase: db,
