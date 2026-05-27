@@ -29,14 +29,17 @@ expect(mockContext.output).toHaveBeenCalledWith(
 
 ### Mocking a Workspace within the Context object
 
-One thing to be aware about: if you would like to call `createMockActionContext` inside `it`,
-you have to provide a `workspacePath`. By default, `createMockActionContext` uses
-`import { createMockDirectory } from '@backstage/backend-test-utils';` to create it for you. You can use the code below to customize the `workspacePath` without using the default workspace of the `createMockActionContext` function.
+If you would like to call `createMockActionContext` inside `it`, you have to
+provide a `workspacePath`. By default, `createMockActionContext` uses
+`createMockDirectory` from `@backstage/backend-test-utils` to create one for
+you. You can use the code below to customize the `workspacePath` without using
+the default workspace of the `createMockActionContext` function.
 
 ```typescript
 describe('github:autolinks:create', async () => {
-  const workspacePath = createMockDirectory().resolve('workspace');
-  // ...
+  const mockDir = createMockDirectory();
+
+  beforeEach(mockDir.clear);
 
   it('should call the githubApis for creating alphanumeric autolink reference', async () => {
     // ...
@@ -47,7 +50,7 @@ describe('github:autolinks:create', async () => {
           keyPrefix: 'TICKET-',
           urlTemplate: 'https://example.com/TICKET?query=<num>',
         },
-        workspacePath,
+        workspacePath: mockDir.resolve('workspace'),
       }),
     );
     //...

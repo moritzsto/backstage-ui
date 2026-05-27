@@ -403,6 +403,15 @@ registerTestHooks();
  * within a `describe` block. It will call `afterAll` to make sure that the mock directory
  * is removed after the tests have run.
  *
+ * A test file should typically create only one mock directory and organize different
+ * fixtures as folders inside it. Use `setContent` or `addContent` with nested objects
+ * to set up the data needed by each individual test.
+ *
+ * Multiple `createMockDirectory` calls are fine when a test file genuinely needs
+ * distinct directory categories at the same time, for example a source and an output
+ * directory. Do not call `createMockDirectory` once per test case as this creates
+ * unnecessary temporary directories and slows down the test suite.
+ *
  * @example
  * ```ts
  * describe('MySubject', () => {
