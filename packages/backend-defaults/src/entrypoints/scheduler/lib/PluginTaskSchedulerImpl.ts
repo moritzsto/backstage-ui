@@ -36,6 +36,7 @@ import { Duration } from 'luxon';
 import express from 'express';
 import Router from 'express-promise-router';
 import { LocalTaskWorker } from './LocalTaskWorker';
+import { TaskStatePoller } from './TaskStatePoller';
 import { TaskWorker } from './TaskWorker';
 import { TaskSettingsV2, TaskApiTasksResponse } from './types';
 import { delegateAbortController, TRACER_ID, validateId } from './util';
@@ -59,6 +60,7 @@ export class PluginTaskSchedulerImpl implements SchedulerService {
   private readonly pluginId: string;
   private readonly databaseFactory: () => Promise<Knex>;
   private readonly logger: LoggerService;
+  private poller?: TaskStatePoller;
 
   constructor(
     pluginId: string,
@@ -140,11 +142,24 @@ export class PluginTaskSchedulerImpl implements SchedulerService {
 
     if (scope === 'global') {
       const knex = await this.databaseFactory();
+
+      if (!this.poller) {
+        const pollerAbort = new AbortController();
+        this.shutdownInitiated.then(() => pollerAbort.abort());
+        this.poller = new TaskStatePoller({
+          knex,
+          pollInterval: Duration.fromObject({ seconds: 5 }),
+          logger: this.logger.child({ type: 'taskStatePoller' }),
+        });
+        this.poller.start(pollerAbort.signal);
+      }
+
       const worker = new TaskWorker(
         task.id,
         this.instrumentedFunction(task, scope),
         knex,
         this.logger.child({ task: task.id }),
+        this.poller,
       );
       await worker.start(settings, { signal: abortController.signal });
       this.globalWorkersById.set(task.id, worker);

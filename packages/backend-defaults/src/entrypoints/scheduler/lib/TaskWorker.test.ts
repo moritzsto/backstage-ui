@@ -21,6 +21,7 @@ import waitForExpect from 'wait-for-expect';
 import { migrateBackendTasks } from '../database/migrateBackendTasks';
 import { DB_TASKS_TABLE, DbTasksRow } from '../database/tables';
 import { TaskWorker } from './TaskWorker';
+import { TaskStatePoller } from './TaskStatePoller';
 import { createTestScopedSignal } from './__testUtils__/createTestScopedSignal';
 import { TaskSettingsV2 } from './types';
 
@@ -33,14 +34,24 @@ describe.each(databases.eachSupportedId())('TaskWorker, %s', databaseId => {
   const testScopedSignal = createTestScopedSignal();
 
   let knex: Awaited<ReturnType<typeof databases.init>>;
+  let poller: TaskStatePoller;
+  let pollerAbort: AbortController;
 
   beforeEach(async () => {
     knex = await databases.init(databaseId);
     await migrateBackendTasks(knex);
+    pollerAbort = new AbortController();
+    poller = new TaskStatePoller({
+      knex,
+      pollInterval: Duration.fromObject({ milliseconds: 100 }),
+      logger,
+    });
+    poller.start(pollerAbort.signal);
     jest.resetAllMocks();
   });
 
   afterEach(async () => {
+    pollerAbort.abort();
     await knex?.destroy();
   });
 
@@ -55,7 +66,7 @@ describe.each(databases.eachSupportedId())('TaskWorker, %s', databaseId => {
       timeoutAfterDuration: Duration.fromObject({ minutes: 1 }).toISO()!,
     };
 
-    const worker = new TaskWorker('task1', fn, knex, logger);
+    const worker = new TaskWorker('task1', fn, knex, logger, poller);
     await worker.persistTask(settings);
 
     let row = (await knex<DbTasksRow>(DB_TASKS_TABLE))[0];
@@ -168,8 +179,7 @@ describe.each(databases.eachSupportedId())('TaskWorker, %s', databaseId => {
       cadence: '* * * * * *',
       timeoutAfterDuration: Duration.fromMillis(60000).toISO()!,
     };
-    const checkFrequency = Duration.fromObject({ milliseconds: 100 });
-    const worker = new TaskWorker('task1', fn, knex, logger, checkFrequency);
+    const worker = new TaskWorker('task1', fn, knex, logger, poller);
     worker.start(settings, { signal: testScopedSignal() });
 
     await waitForExpect(async () => {
@@ -198,8 +208,7 @@ describe.each(databases.eachSupportedId())('TaskWorker, %s', databaseId => {
       cadence: '* * * * * *',
       timeoutAfterDuration: Duration.fromMillis(60000).toISO()!,
     };
-    const checkFrequency = Duration.fromObject({ milliseconds: 100 });
-    const worker = new TaskWorker('task1', fn, knex, logger, checkFrequency);
+    const worker = new TaskWorker('task1', fn, knex, logger, poller);
     worker.start(settings, { signal: testScopedSignal() });
 
     await waitForExpect(() => {
@@ -218,7 +227,7 @@ describe.each(databases.eachSupportedId())('TaskWorker, %s', databaseId => {
       timeoutAfterDuration: Duration.fromMillis(60000).toISO()!,
     };
 
-    const worker = new TaskWorker('task1', fn, knex, logger);
+    const worker = new TaskWorker('task1', fn, knex, logger, poller);
     await worker.persistTask(settings);
 
     await waitForExpect(async () => {
@@ -268,14 +277,14 @@ describe.each(databases.eachSupportedId())('TaskWorker, %s', databaseId => {
       timeoutAfterDuration: Duration.fromMillis(60000).toISO()!,
     };
 
-    const worker1 = new TaskWorker('task1', fn, knex, logger);
+    const worker1 = new TaskWorker('task1', fn, knex, logger, poller);
     await worker1.persistTask(settings);
     await knex<DbTasksRow>(DB_TASKS_TABLE).where('id', '=', 'task1').delete();
     await expect(worker1.findReadyTask()).resolves.toEqual({
       result: 'abort',
     });
 
-    const worker2 = new TaskWorker('task2', fn, knex, logger);
+    const worker2 = new TaskWorker('task2', fn, knex, logger, poller);
     await worker2.persistTask(settings);
 
     await waitForExpect(async () => {
@@ -288,7 +297,7 @@ describe.each(databases.eachSupportedId())('TaskWorker, %s', databaseId => {
     await knex<DbTasksRow>(DB_TASKS_TABLE).where('id', '=', 'task2').delete();
     await expect(worker2.tryClaimTask('ticket', settings)).resolves.toBe(false);
 
-    const worker3 = new TaskWorker('task3', fn, knex, logger);
+    const worker3 = new TaskWorker('task3', fn, knex, logger, poller);
     await worker3.persistTask(settings);
 
     await waitForExpect(async () => {
@@ -316,13 +325,7 @@ describe.each(databases.eachSupportedId())('TaskWorker, %s', databaseId => {
 
     // Start a single worker and make sure it waits and then goes to work
     const fn1 = jest.fn(async () => {});
-    const worker1 = new TaskWorker(
-      'task1',
-      fn1,
-      knex,
-      logger,
-      Duration.fromMillis(10),
-    );
+    const worker1 = new TaskWorker('task1', fn1, knex, logger, poller);
     await worker1.start(settings, { signal: abortFirst.signal });
 
     expect(fn1).toHaveBeenCalledTimes(0);
@@ -335,13 +338,7 @@ describe.each(databases.eachSupportedId())('TaskWorker, %s', databaseId => {
     // Start a second worker and make sure it waits but the first worker still works along
     const fn2 = jest.fn();
     const promise2 = new Promise(resolve => fn2.mockImplementation(resolve));
-    const worker2 = new TaskWorker(
-      'task1',
-      fn2,
-      knex,
-      logger,
-      Duration.fromMillis(10),
-    );
+    const worker2 = new TaskWorker('task1', fn2, knex, logger, poller);
     await worker2.start(settings, { signal: testScopedSignal() });
 
     // We eventually abort the first worker just to make sure that the second
@@ -364,7 +361,7 @@ describe.each(databases.eachSupportedId())('TaskWorker, %s', databaseId => {
       timeoutAfterDuration: 'PT1M',
     };
 
-    const worker = new TaskWorker('task99', fn, knex, logger);
+    const worker = new TaskWorker('task99', fn, knex, logger, poller);
     await worker.persistTask(settings);
     const row1 = (await knex<DbTasksRow>(DB_TASKS_TABLE))[0];
 
@@ -403,7 +400,7 @@ describe.each(databases.eachSupportedId())('TaskWorker, %s', databaseId => {
       timeoutAfterDuration: 'PT1M',
     };
 
-    const worker = new TaskWorker('task99', fn, knex, logger);
+    const worker = new TaskWorker('task99', fn, knex, logger, poller);
     await worker.persistTask(initialSettings);
     // replicate task running, sets next_run_start_at based on cadence
     await worker.tryClaimTask('ticket', initialSettings);
@@ -455,7 +452,7 @@ describe.each(databases.eachSupportedId())('TaskWorker, %s', databaseId => {
       timeoutAfterDuration: 'PT1M',
     };
 
-    const worker = new TaskWorker('task99', fn, knex, logger);
+    const worker = new TaskWorker('task99', fn, knex, logger, poller);
     await worker.persistTask(initialSettings);
     // replicate task running, sets next_run_start_at based on cadence
     await worker.tryClaimTask('ticket', initialSettings);
@@ -506,7 +503,7 @@ describe.each(databases.eachSupportedId())('TaskWorker, %s', databaseId => {
       timeoutAfterDuration: 'PT1M',
     };
 
-    const worker = new TaskWorker('task99', fn, knex, logger);
+    const worker = new TaskWorker('task99', fn, knex, logger, poller);
     await worker.persistTask(initialSettings);
     await worker.tryClaimTask('ticket', initialSettings);
     await worker.tryReleaseTask('ticket', initialSettings);
@@ -524,7 +521,7 @@ describe.each(databases.eachSupportedId())('TaskWorker, %s', databaseId => {
       timeoutAfterDuration: Duration.fromObject({ minutes: 1 }).toISO()!,
     };
 
-    const worker = new TaskWorker('task1', fn, knex, logger);
+    const worker = new TaskWorker('task1', fn, knex, logger, poller);
     await worker.persistTask(settings);
     await worker.tryClaimTask('ticket', settings);
 
@@ -558,7 +555,7 @@ describe.each(databases.eachSupportedId())('TaskWorker, %s', databaseId => {
       timeoutAfterDuration: Duration.fromObject({ minutes: 1 }).toISO()!,
     };
 
-    const worker = new TaskWorker('task1', fn, knex, logger);
+    const worker = new TaskWorker('task1', fn, knex, logger, poller);
     await worker.persistTask(settings);
 
     await expect(TaskWorker.cancel(knex, 'task1')).rejects.toThrow(

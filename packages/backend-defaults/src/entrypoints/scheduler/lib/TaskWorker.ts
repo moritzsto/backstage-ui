@@ -34,8 +34,9 @@ import {
   serializeError,
 } from './util';
 import { SchedulerServiceTaskFunction } from '@backstage/backend-plugin-api';
+import { TaskListener, TaskStatePoller } from './TaskStatePoller';
 
-const DEFAULT_WORK_CHECK_FREQUENCY = Duration.fromObject({ seconds: 5 });
+const LIVENESS_CHECK_INTERVAL = Duration.fromObject({ seconds: 5 });
 
 /**
  * Implements tasks that run across worker hosts, with collaborative locking.
@@ -50,20 +51,20 @@ export class TaskWorker {
   private readonly fn: SchedulerServiceTaskFunction;
   private readonly knex: Knex;
   private readonly logger: LoggerService;
-  private readonly workCheckFrequency: Duration;
+  private readonly poller: TaskStatePoller;
 
   constructor(
     taskId: string,
     fn: SchedulerServiceTaskFunction,
     knex: Knex,
     logger: LoggerService,
-    workCheckFrequency: Duration = DEFAULT_WORK_CHECK_FREQUENCY,
+    poller: TaskStatePoller,
   ) {
     this.taskId = taskId;
     this.fn = fn;
     this.knex = knex;
     this.logger = logger;
-    this.workCheckFrequency = workCheckFrequency;
+    this.poller = poller;
   }
 
   async start(settings: TaskSettingsV2, options: { signal: AbortSignal }) {
@@ -77,14 +78,7 @@ export class TaskWorker {
       `Registered scheduled task: ${this.taskId}, ${JSON.stringify(settings)}`,
     );
 
-    let workCheckFrequency = this.workCheckFrequency;
-    const isDuration = settings?.cadence.startsWith('P');
-    if (isDuration) {
-      const cadence = Duration.fromISO(settings.cadence);
-      if (cadence < workCheckFrequency) {
-        workCheckFrequency = cadence;
-      }
-    }
+    const listener = this.poller.setupListener(this.taskId);
 
     (async () => {
       let attemptNum = 1;
@@ -93,11 +87,10 @@ export class TaskWorker {
           await this.performInitialWait(settings, options.signal);
 
           while (!options.signal.aborted) {
-            const runResult = await this.runOnce(options.signal);
+            const runResult = await this.runOnce(listener, options.signal);
             if (runResult.result === 'abort') {
               break;
             }
-            await sleep(workCheckFrequency, options.signal);
           }
 
           this.logger.info(`Task worker finished: ${this.taskId}`);
@@ -229,31 +222,36 @@ export class TaskWorker {
 
   /**
    * Makes a single attempt at running the task to completion, if ready.
-   *
-   * @returns The outcome of the attempt
+   * Waits for the shared poller to signal readiness instead of querying
+   * the database directly.
    */
   private async runOnce(
+    listener: TaskListener,
     signal: AbortSignal,
   ): Promise<
-    | { result: 'not-ready-yet' }
     | { result: 'abort' }
+    | { result: 'claim-lost' }
     | { result: 'failed' }
     | { result: 'completed' }
   > {
-    const findResult = await this.findReadyTask();
-    if (
-      findResult.result === 'not-ready-yet' ||
-      findResult.result === 'abort'
-    ) {
+    const findResult = await listener.waitForReady();
+    if (findResult.result === 'abort') {
       return findResult;
     }
+    return this.claimAndRun(findResult.settings, signal);
+  }
 
-    const taskSettings = findResult.settings;
+  private async claimAndRun(
+    taskSettings: TaskSettingsV2,
+    signal: AbortSignal,
+  ): Promise<
+    { result: 'claim-lost' } | { result: 'failed' } | { result: 'completed' }
+  > {
     const ticket = uuid();
 
     const claimed = await this.tryClaimTask(ticket, taskSettings);
     if (!claimed) {
-      return { result: 'not-ready-yet' };
+      return { result: 'claim-lost' };
     }
 
     // Abort the task execution either if the worker is stopped, or if the
@@ -270,7 +268,7 @@ export class TaskWorker {
         if (!taskAbortController.signal.aborted) {
           scheduleLivenessCheck();
         }
-      }, this.workCheckFrequency.as('milliseconds'));
+      }, LIVENESS_CHECK_INTERVAL.as('milliseconds'));
     };
     scheduleLivenessCheck();
 
