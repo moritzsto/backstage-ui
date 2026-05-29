@@ -273,6 +273,7 @@ export type ScaffolderFormDecoratorContext<
 > = {
   input: TInput;
   formState: Record<string, JsonValue>;
+  parameters: JsonObject[];
   setFormState: (
     fn: (currentState: Record<string, JsonValue>) => Record<string, JsonValue>,
   ) => void;
