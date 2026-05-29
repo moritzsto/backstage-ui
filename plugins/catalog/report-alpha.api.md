@@ -434,10 +434,12 @@ const _default: OverridableFrontendPlugin<
     }>;
     'entity-card:catalog/about': OverridableExtensionDefinition<{
       config: {
+        allowedRefreshLocationTypes: string[] | undefined;
         filter: FilterPredicate | undefined;
         type: 'content' | 'info' | undefined;
       };
       configInput: {
+        allowedRefreshLocationTypes?: string[] | undefined;
         filter?: FilterPredicate | undefined;
         type?: 'content' | 'info' | undefined;
       };

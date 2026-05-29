@@ -160,10 +160,12 @@ function DefaultAboutCardSubheader() {
 export interface InternalAboutCardProps {
   /** Icon link row rendered at the top of the card body. */
   iconLinks?: JSX.Element;
+  /** List of allowed location types for refreshing entities. If not specified, defaults to url and file. */
+  allowedRefreshLocationTypes?: string[];
 }
 
 export function InternalAboutCard(props: InternalAboutCardProps) {
-  const { iconLinks } = props;
+  const { iconLinks, allowedRefreshLocationTypes } = props;
   const classes = useStyles();
   const { entity } = useEntity();
   const catalogApi = useApi(catalogApiRef);
@@ -180,9 +182,13 @@ export function InternalAboutCard(props: InternalAboutCardProps) {
     entity.metadata.annotations?.[ANNOTATION_EDIT_URL];
 
   const entityLocation = entity.metadata.annotations?.[ANNOTATION_LOCATION];
-  // Limiting the ability to manually refresh to the less expensive locations
-  const allowRefresh =
-    entityLocation?.startsWith('url:') || entityLocation?.startsWith('file:');
+  // By default, manual refresh is limited to the less expensive `url` and
+  // `file` locations, but this can be overridden via
+  // `allowedRefreshLocationTypes`.
+  const defaultAllowedRefreshLocationTypes = ['url', 'file'];
+  const allowRefresh = (
+    allowedRefreshLocationTypes || defaultAllowedRefreshLocationTypes
+  ).some(type => entityLocation?.startsWith(`${type}:`));
   const refreshEntity = useCallback(async () => {
     try {
       await catalogApi.refreshEntity(stringifyEntityRef(entity));
