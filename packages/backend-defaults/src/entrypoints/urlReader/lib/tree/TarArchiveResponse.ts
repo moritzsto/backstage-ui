@@ -175,6 +175,7 @@ export class TarArchiveResponse implements UrlReaderServiceReadTreeResponse {
       tar.extract({
         strip,
         cwd: dir,
+        chmod: true,
         filter: (path, stat) => {
           // Filter errors will short-circuit the rest of the filtering and then throw
           if (filterError) {
