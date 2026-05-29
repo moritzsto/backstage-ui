@@ -1626,6 +1626,9 @@ export interface FeatureFlagsApi {
   isActive(name: string): boolean;
   registerFlag(flag: FeatureFlag): void;
   save(options: FeatureFlagsSaveOptions): void;
+  state$(): Observable<{
+    active: ReadonlySet<string>;
+  }>;
 }
 
 // @public
