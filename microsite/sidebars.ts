@@ -79,6 +79,7 @@ export default {
           'getting-started/update-a-component',
           'getting-started/unregister-delete-component',
         ]),
+        'features/techdocs/creating-and-publishing',
       ]),
       'overview/support',
       'getting-started/keeping-backstage-updated',
