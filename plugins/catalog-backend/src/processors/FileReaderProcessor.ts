@@ -27,6 +27,29 @@ import {
 
 const LOCATION_TYPE = 'file';
 
+// Detect whether a location target contains any (unescaped) glob
+// meta-characters. We use a local helper rather than `glob.hasMagic` so the
+// check does not depend on how the default `glob` import is resolved at
+// runtime under different module-interop setups.
+//
+// On POSIX platforms `\` is an escape character, so we strip a backslash
+// that immediately precedes a glob meta-character before scanning, to
+// match minimatch / glob.hasMagic semantics for literal escaped paths.
+//
+// On Windows `\` is a path separator, not an escape character — stripping
+// `\*` there would drop the `*` from patterns like `C:\dir\*.yaml`
+// produced by `path.join`, misclassifying a glob as a concrete path and
+// re-introducing the #33326 regression on Windows. We therefore skip the
+// strip on platforms where `path.sep === '\\'`.
+const GLOB_MAGIC_CHARS = /[*?[\]{}()|!]/;
+const BACKSLASH_IS_PATH_SEP = path.sep === '\\';
+function isGlobPattern(target: string): boolean {
+  const scanned = BACKSLASH_IS_PATH_SEP
+    ? target
+    : target.replace(/\\[*?[\]{}()|!]/g, '');
+  return GLOB_MAGIC_CHARS.test(scanned);
+}
+
 /** @public */
 export class FileReaderProcessor implements CatalogProcessor {
   getProcessorName(): string {
@@ -70,7 +93,12 @@ export class FileReaderProcessor implements CatalogProcessor {
             );
           }
         }
-      } else if (!optional) {
+      } else if (!optional && !isGlobPattern(location.target)) {
+        // Only emit notFoundError for concrete paths that don't exist.
+        // For glob patterns that match zero files we stay silent: emitting
+        // notFoundError here caused deferred entities discovered by other
+        // targets in the same Location to be dropped by the processing
+        // orchestrator (see #33326).
         const message = `${location.type} ${location.target} does not exist`;
         emit(processingResult.notFoundError(location, message));
       }

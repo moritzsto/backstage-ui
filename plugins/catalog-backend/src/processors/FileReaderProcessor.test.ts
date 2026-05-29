@@ -102,4 +102,59 @@ describe('FileReaderProcessor', () => {
       target: expect.stringMatching(/^[^*]*$/),
     });
   });
+
+  it('should not emit notFoundError when a glob pattern matches zero files (#33326)', async () => {
+    const processor = new FileReaderProcessor();
+    const emit = jest.fn();
+
+    await processor.readLocation(
+      {
+        type: 'file',
+        target: `${path.join(fixturesRoot, 'no-such-dir', '*.yaml')}`,
+      },
+      false,
+      emit,
+      defaultEntityDataParser,
+    );
+
+    // No error should be emitted for a glob that matches nothing. Concrete
+    // missing paths remain covered by the 'should fail load from file with
+    // error' test above.
+    expect(emit).not.toHaveBeenCalled();
+  });
+
+  it('should still emit notFoundError for a missing path containing escaped glob characters (#33326)', async () => {
+    // POSIX-only: the target below uses `\*` as an escaped-literal glob
+    // character, which is only meaningful on POSIX. On Windows `\` is a path
+    // separator, so there is no such thing as an "escaped glob character" in
+    // a target path and this scenario cannot arise. We skip the assertions at
+    // runtime on Windows rather than using `it.skip` via a ternary, because
+    // eslint-plugin-jest's `no-standalone-expect` rule only recognizes
+    // `it`/`test`/`it.skip` when called directly on the identifier, not when
+    // dispatched via a conditional variable.
+    if (path.sep !== '/') {
+      return;
+    }
+
+    // Regression test: the local isGlobPattern helper must not classify a
+    // literal path that merely contains escaped glob characters (e.g. `\*`
+    // on POSIX) as a glob. Such paths have to still surface notFoundError
+    // when they don't exist, otherwise a typo in a concrete path would be
+    // silently dropped.
+    const processor = new FileReaderProcessor();
+    const emit = jest.fn();
+
+    const target = `${fixturesRoot}/missing\\*.yaml`;
+    await processor.readLocation(
+      { type: 'file', target },
+      false,
+      emit,
+      defaultEntityDataParser,
+    );
+
+    expect(emit).toHaveBeenCalledTimes(1);
+    const [result] = emit.mock.calls[0];
+    expect(result.type).toBe('error');
+    expect(result.error.name).toBe('NotFoundError');
+  });
 });
