@@ -272,6 +272,7 @@ maintainership
 makefile
 Matomo
 matchers
+matchHash
 md
 memcache
 memoization
