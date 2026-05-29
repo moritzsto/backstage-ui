@@ -46,6 +46,7 @@ import {
 import { scaffolderReactTranslationRef } from '../../../translation';
 import { useFormDataFromQuery, useTemplateSchema } from '../../hooks';
 import { useTransformSchemaToProps } from '../../hooks/useTransformSchemaToProps';
+import { evaluateCondition } from '../../lib';
 import { Form } from '../Form';
 import { PasswordWidget } from '../PasswordWidget/PasswordWidget';
 import { ReviewState, type ReviewStateProps } from '../ReviewState';
@@ -133,6 +134,71 @@ export const Stepper = (stepperProps: StepperProps) => {
   const [stepsState, setStepsState] =
     useState<Record<string, JsonValue>>(initialState);
 
+  const visibleSteps = useMemo(
+    () => steps.filter(step => evaluateCondition(step.if, stepsState)),
+    [steps, stepsState],
+  );
+
+  useEffect(() => {
+    setActiveStep(prev =>
+      prev >= visibleSteps.length ? Math.max(visibleSteps.length - 1, 0) : prev,
+    );
+  }, [visibleSteps.length]);
+
+  const filteredFormState = useMemo(() => {
+    const hiddenSteps = steps.filter(
+      step => step.if !== undefined && !evaluateCondition(step.if, stepsState),
+    );
+    if (hiddenSteps.length === 0) return stepsState;
+
+    const collectSchemaKeys = (schema: Record<string, unknown>): string[] => {
+      const keys: string[] = [];
+      if (schema.properties) {
+        keys.push(...Object.keys(schema.properties as Record<string, unknown>));
+      }
+      for (const keyword of ['allOf', 'oneOf', 'anyOf'] as const) {
+        const entries = schema[keyword];
+        if (Array.isArray(entries)) {
+          for (const entry of entries) {
+            if (entry && typeof entry === 'object') {
+              keys.push(...collectSchemaKeys(entry as Record<string, unknown>));
+            }
+          }
+        }
+      }
+      for (const keyword of ['then', 'else'] as const) {
+        const sub = schema[keyword];
+        if (sub && typeof sub === 'object' && !Array.isArray(sub)) {
+          keys.push(...collectSchemaKeys(sub as Record<string, unknown>));
+        }
+      }
+      if (schema.dependencies && typeof schema.dependencies === 'object') {
+        for (const dep of Object.values(
+          schema.dependencies as Record<string, unknown>,
+        )) {
+          if (dep && typeof dep === 'object' && !Array.isArray(dep)) {
+            keys.push(...collectSchemaKeys(dep as Record<string, unknown>));
+          }
+        }
+      }
+      return keys;
+    };
+
+    const hiddenKeys = new Set(
+      hiddenSteps.flatMap(step => collectSchemaKeys(step.mergedSchema)),
+    );
+    for (const step of visibleSteps) {
+      for (const key of collectSchemaKeys(step.mergedSchema)) {
+        hiddenKeys.delete(key);
+      }
+    }
+    if (hiddenKeys.size === 0) return stepsState;
+
+    return Object.fromEntries(
+      Object.entries(stepsState).filter(([key]) => !hiddenKeys.has(key)),
+    );
+  }, [steps, visibleSteps, stepsState]);
+
   const [errors, setErrors] = useState<undefined | FormValidation>();
   const styles = useStyles();
 
@@ -161,16 +227,20 @@ export const Stepper = (stepperProps: StepperProps) => {
   }, [props.extensions]);
 
   const validation = useMemo(() => {
-    return createAsyncValidators(steps[activeStep]?.mergedSchema, validators, {
-      apiHolder,
-    });
-  }, [steps, activeStep, validators, apiHolder]);
+    return createAsyncValidators(
+      visibleSteps[activeStep]?.mergedSchema,
+      validators,
+      { apiHolder },
+    );
+  }, [visibleSteps, activeStep, validators, apiHolder]);
 
   const handleBack = useCallback(() => {
     setActiveStep(prevActiveStep => prevActiveStep - 1);
   }, [setActiveStep]);
 
-  const currentStep = useTransformSchemaToProps(steps[activeStep], { layouts });
+  const currentStep = useTransformSchemaToProps(visibleSteps[activeStep], {
+    layouts,
+  });
 
   const {
     formContext: propFormContext,
@@ -234,11 +304,11 @@ export const Stepper = (stepperProps: StepperProps) => {
     setIsCreating(true);
     analytics.captureEvent('click', `${createLabel}`);
     try {
-      await onCreate(stepsState);
+      await onCreate(filteredFormState);
     } finally {
       setIsCreating(false);
     }
-  }, [analytics, createLabel, onCreate, stepsState]);
+  }, [analytics, createLabel, filteredFormState, onCreate]);
 
   return (
     <>
@@ -249,7 +319,7 @@ export const Stepper = (stepperProps: StepperProps) => {
         variant="elevation"
         style={{ overflowX: 'auto' }}
       >
-        {steps.map((step, index) => {
+        {visibleSteps.map((step, index) => {
           const isAllowedLabelClick = activeStep > index;
           return (
             <MuiStep key={index}>
@@ -271,7 +341,7 @@ export const Stepper = (stepperProps: StepperProps) => {
       </MuiStepper>
       <div className={styles.formWrapper}>
         {/* eslint-disable-next-line no-nested-ternary */}
-        {activeStep < steps.length ? (
+        {activeStep < visibleSteps.length ? (
           <Form
             key={activeStep}
             validator={validator}
@@ -301,7 +371,7 @@ export const Stepper = (stepperProps: StepperProps) => {
                 {backLabel}
               </Button>
               <Button variant="primary" type="submit" isDisabled={isValidating}>
-                {activeStep === steps.length - 1
+                {activeStep === visibleSteps.length - 1
                   ? reviewLabel
                   : t('stepper.nextButtonText')}
               </Button>
@@ -311,15 +381,18 @@ export const Stepper = (stepperProps: StepperProps) => {
         ReviewStepComponent ? (
           <ReviewStepComponent
             disableButtons={isValidating}
-            formData={stepsState}
+            formData={filteredFormState}
             handleBack={handleBack}
             handleReset={() => {}}
-            steps={steps}
+            steps={visibleSteps}
             handleCreate={handleCreate}
           />
         ) : (
           <>
-            <ReviewStateComponent formState={stepsState} schemas={steps} />
+            <ReviewStateComponent
+              formState={filteredFormState}
+              schemas={visibleSteps}
+            />
             <div className={styles.footer}>
               <Button
                 variant="tertiary"
