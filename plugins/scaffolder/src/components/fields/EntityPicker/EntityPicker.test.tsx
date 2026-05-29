@@ -52,7 +52,11 @@ describe('<EntityPicker />', () => {
   let props: FieldProps<string>;
 
   const catalogApi = catalogApiMock.mock({
-    getEntities: jest.fn(async () => ({ items: entities })),
+    queryEntities: jest.fn(async () => ({
+      items: entities,
+      totalItems: entities.length,
+      pageInfo: {},
+    })),
   });
 
   let Wrapper: ComponentType<PropsWithChildren<{}>>;
@@ -95,7 +99,7 @@ describe('<EntityPicker />', () => {
         </Wrapper>,
       );
 
-      expect(catalogApi.getEntities).toHaveBeenCalledWith({
+      expect(catalogApi.queryEntities).toHaveBeenCalledWith({
         fields: [
           'kind',
           'metadata.name',
@@ -105,7 +109,6 @@ describe('<EntityPicker />', () => {
           'spec.profile.displayName',
           'spec.type',
         ],
-        filter: undefined,
       });
     });
 
@@ -137,7 +140,11 @@ describe('<EntityPicker />', () => {
         formData,
       } as unknown as FieldProps<any>;
 
-      catalogApi.getEntities.mockResolvedValue({ items: entities });
+      catalogApi.queryEntities.mockResolvedValue({
+        items: entities,
+        totalItems: entities.length,
+        pageInfo: {},
+      });
     });
 
     it('searches for users and groups', async () => {
@@ -147,11 +154,10 @@ describe('<EntityPicker />', () => {
         </Wrapper>,
       );
 
-      expect(catalogApi.getEntities).toHaveBeenCalledWith(
+      expect(catalogApi.queryEntities).toHaveBeenCalledWith(
         expect.objectContaining({
-          filter: {
-            kind: ['User'],
-          },
+          filter: { kind: ['User'] },
+          query: {},
         }),
       );
     });
@@ -182,7 +188,11 @@ describe('<EntityPicker />', () => {
         formData,
       } as unknown as FieldProps<any>;
 
-      catalogApi.getEntities.mockResolvedValue({ items: entities });
+      catalogApi.queryEntities.mockResolvedValue({
+        items: entities,
+        totalItems: entities.length,
+        pageInfo: {},
+      });
     });
 
     it('searches for a specific group entity', async () => {
@@ -192,18 +202,13 @@ describe('<EntityPicker />', () => {
         </Wrapper>,
       );
 
-      expect(catalogApi.getEntities).toHaveBeenCalledWith(
+      expect(catalogApi.queryEntities).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: [
-            {
-              kind: ['Group'],
-              'metadata.name': 'test-entity',
-            },
-            {
-              kind: ['User'],
-              'metadata.name': 'test-entity',
-            },
+            { kind: ['Group'], 'metadata.name': 'test-entity' },
+            { kind: ['User'], 'metadata.name': 'test-entity' },
           ],
+          query: {},
         }),
       );
     });
@@ -217,7 +222,11 @@ describe('<EntityPicker />', () => {
         },
       };
 
-      catalogApi.getEntities.mockResolvedValue({ items: entities });
+      catalogApi.queryEntities.mockResolvedValue({
+        items: entities,
+        totalItems: entities.length,
+        pageInfo: {},
+      });
 
       await renderInTestApp(
         <Wrapper>
@@ -225,12 +234,10 @@ describe('<EntityPicker />', () => {
         </Wrapper>,
       );
 
-      expect(catalogApi.getEntities).toHaveBeenCalledWith(
+      expect(catalogApi.queryEntities).toHaveBeenCalledWith(
         expect.objectContaining({
-          filter: {
-            kind: ['Group'],
-            'metadata.name': 'test-entity',
-          },
+          filter: { kind: ['Group'], 'metadata.name': 'test-entity' },
+          query: {},
         }),
       );
     });
@@ -253,7 +260,7 @@ describe('<EntityPicker />', () => {
         </Wrapper>,
       );
 
-      expect(catalogApi.getEntities).toHaveBeenCalledWith(
+      expect(catalogApi.queryEntities).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: [
             {
@@ -261,6 +268,7 @@ describe('<EntityPicker />', () => {
               'metadata.annotation.some/anotation': CATALOG_FILTER_EXISTS,
             },
           ],
+          query: {},
         }),
       );
     });
@@ -291,7 +299,11 @@ describe('<EntityPicker />', () => {
         formData,
       } as unknown as FieldProps<any>;
 
-      catalogApi.getEntities.mockResolvedValue({ items: entities });
+      catalogApi.queryEntities.mockResolvedValue({
+        items: entities,
+        totalItems: entities.length,
+        pageInfo: {},
+      });
     });
     it('Prevents user from modifying input when ui:disabled is true', async () => {
       props.uiSchema = { 'ui:disabled': true };
@@ -355,7 +367,11 @@ describe('<EntityPicker />', () => {
         formData,
       } as unknown as FieldProps<any>;
 
-      catalogApi.getEntities.mockResolvedValue({ items: entities });
+      catalogApi.queryEntities.mockResolvedValue({
+        items: entities,
+        totalItems: entities.length,
+        pageInfo: {},
+      });
     });
 
     it('searches for a Group entity', async () => {
@@ -365,14 +381,10 @@ describe('<EntityPicker />', () => {
         </Wrapper>,
       );
 
-      expect(catalogApi.getEntities).toHaveBeenCalledWith(
+      expect(catalogApi.queryEntities).toHaveBeenCalledWith(
         expect.objectContaining({
-          filter: [
-            {
-              kind: ['Group'],
-              'metadata.name': 'test-group',
-            },
-          ],
+          filter: [{ kind: ['Group'], 'metadata.name': 'test-group' }],
+          query: {},
         }),
       );
     });
@@ -394,7 +406,11 @@ describe('<EntityPicker />', () => {
         formData,
       } as unknown as FieldProps<any>;
 
-      catalogApi.getEntities.mockResolvedValue({ items: entities });
+      catalogApi.queryEntities.mockResolvedValue({
+        items: entities,
+        totalItems: entities.length,
+        pageInfo: {},
+      });
     });
 
     it('default behavior', async () => {
@@ -488,7 +504,11 @@ describe('<EntityPicker />', () => {
         formData,
       } as unknown as FieldProps<any>;
 
-      catalogApi.getEntities.mockResolvedValue({ items: entities });
+      catalogApi.queryEntities.mockResolvedValue({
+        items: entities,
+        totalItems: entities.length,
+        pageInfo: {},
+      });
     });
 
     it('returns the full entityRef when entity exists in the list', async () => {
@@ -539,13 +559,15 @@ describe('<EntityPicker />', () => {
     });
 
     it('renders selection displayName', async () => {
-      catalogApi.getEntities.mockResolvedValue({
+      catalogApi.queryEntities.mockResolvedValue({
         items: entities.map(item => ({
           ...item,
           spec: {
             profile: { displayName: item.metadata.name.replace('-', ' ') },
           },
         })),
+        totalItems: entities.length,
+        pageInfo: {},
       });
 
       const { getByRole, getByText } = await renderInTestApp(
@@ -568,7 +590,7 @@ describe('<EntityPicker />', () => {
     });
 
     it('renders selection title', async () => {
-      catalogApi.getEntities.mockResolvedValue({
+      catalogApi.queryEntities.mockResolvedValue({
         items: entities.map(item => ({
           ...item,
           metadata: {
@@ -576,6 +598,8 @@ describe('<EntityPicker />', () => {
             title: item.metadata.name.replace('-', ' ').toUpperCase(),
           },
         })),
+        totalItems: entities.length,
+        pageInfo: {},
       });
 
       const { getByRole, getByText } = await renderInTestApp(
@@ -623,7 +647,11 @@ describe('<EntityPicker />', () => {
         formData,
       } as unknown as FieldProps<any>;
 
-      catalogApi.getEntities.mockResolvedValue({ items: entities });
+      catalogApi.queryEntities.mockResolvedValue({
+        items: entities,
+        totalItems: entities.length,
+        pageInfo: {},
+      });
     });
 
     it('User enters clear input', async () => {
@@ -720,7 +748,11 @@ describe('<EntityPicker />', () => {
         formData,
       } as unknown as FieldProps<any>;
 
-      catalogApi.getEntities.mockResolvedValue({ items: entities });
+      catalogApi.queryEntities.mockResolvedValue({
+        items: entities,
+        totalItems: entities.length,
+        pageInfo: {},
+      });
     });
 
     it('User enters clear input', async () => {
@@ -818,7 +850,11 @@ describe('<EntityPicker />', () => {
         formData,
       } as unknown as FieldProps<any>;
 
-      catalogApi.getEntities.mockResolvedValue({ items: entities });
+      catalogApi.queryEntities.mockResolvedValue({
+        items: entities,
+        totalItems: entities.length,
+        pageInfo: {},
+      });
     });
 
     it('User enters clear input', async () => {
@@ -916,7 +952,11 @@ describe('<EntityPicker />', () => {
         formData,
       } as unknown as FieldProps<any>;
 
-      catalogApi.getEntities.mockResolvedValue({ items: entities });
+      catalogApi.queryEntities.mockResolvedValue({
+        items: entities,
+        totalItems: entities.length,
+        pageInfo: {},
+      });
     });
 
     it('User enters clear input', async () => {

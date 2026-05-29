@@ -102,11 +102,14 @@ export const EntityPicker = (props: EntityPickerProps) => {
       'spec.profile.displayName',
       'spec.type',
     ];
-    const { items } = await catalogApi.getEntities(
-      catalogFilter
-        ? { filter: catalogFilter, fields }
-        : { filter: undefined, fields },
-    );
+
+    const { items } = await catalogApi.queryEntities({
+      fields,
+      ...(catalogFilter && {
+        filter: catalogFilter,
+        query: {}, // Forces POST routing, avoiding URL length limits with large filters
+      }),
+    });
 
     const entityRefToPresentation = new Map<
       string,
