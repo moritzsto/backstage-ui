@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-import { Counter, MetricsAPI } from '@opentelemetry/api';
+import type {
+  MetricsService,
+  MetricsServiceCounter,
+} from '@backstage/backend-plugin-api/alpha';
 import {
   CatalogScmEvent,
   CatalogScmEventsService,
@@ -38,18 +41,17 @@ import {
 export class DefaultCatalogScmEventsService implements CatalogScmEventsService {
   readonly #subscribers: Set<CatalogScmEventsServiceSubscriber>;
   readonly #metrics: {
-    actions: Counter<{ action: string }>;
+    actions: MetricsServiceCounter<{ action: string }>;
   };
 
-  constructor(metrics: MetricsAPI) {
+  constructor(metrics: MetricsService) {
     this.#subscribers = new Set();
 
-    const meter = metrics.getMeter('default');
     this.#metrics = {
-      actions: meter.createCounter('catalog.events.scm.actions', {
+      actions: metrics.createCounter('catalog.events.scm.actions', {
         description:
           'Number of actions taken as a result of SCM event messages',
-        unit: 'short',
+        unit: '{action}',
       }),
     };
   }

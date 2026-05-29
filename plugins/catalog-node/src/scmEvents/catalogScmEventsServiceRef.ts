@@ -18,7 +18,7 @@ import {
   createServiceFactory,
   createServiceRef,
 } from '@backstage/backend-plugin-api';
-import { metrics } from '@opentelemetry/api';
+import { metricsServiceRef } from '@backstage/backend-plugin-api/alpha';
 import { CatalogScmEventsService } from './types';
 import { DefaultCatalogScmEventsService } from './DefaultCatalogScmEventsService';
 
@@ -35,15 +35,17 @@ import { DefaultCatalogScmEventsService } from './DefaultCatalogScmEventsService
 export const catalogScmEventsServiceRef =
   createServiceRef<CatalogScmEventsService>({
     id: 'catalog.scm-events.alpha',
-    defaultFactory: async service =>
-      createServiceFactory({
+    defaultFactory: async service => {
+      let sharedInstance: DefaultCatalogScmEventsService | undefined;
+      return createServiceFactory({
         service,
-        deps: {},
-        createRootContext() {
-          return new DefaultCatalogScmEventsService(metrics);
+        deps: { metrics: metricsServiceRef },
+        factory({ metrics }) {
+          if (!sharedInstance) {
+            sharedInstance = new DefaultCatalogScmEventsService(metrics);
+          }
+          return sharedInstance;
         },
-        factory(_, ctx) {
-          return ctx;
-        },
-      }),
+      });
+    },
   });

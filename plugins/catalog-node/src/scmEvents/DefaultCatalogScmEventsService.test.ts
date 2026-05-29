@@ -15,18 +15,15 @@
  */
 
 import { createDeferred } from '@backstage/types';
-import { MetricsAPI } from '@opentelemetry/api';
+import { metricsServiceMock } from '@backstage/backend-test-utils/alpha';
 import { DefaultCatalogScmEventsService } from './DefaultCatalogScmEventsService';
 
 describe('DefaultCatalogScmEventsService', () => {
-  const counterAdd = jest.fn();
-  const mockMetrics = {
-    getMeter: () => ({
-      createCounter: () => ({
-        add: counterAdd,
-      }),
-    }),
-  } as unknown as MetricsAPI;
+  let mockMetrics: ReturnType<typeof metricsServiceMock.mock>;
+
+  beforeEach(() => {
+    mockMetrics = metricsServiceMock.mock();
+  });
 
   it('should publish and subscribe to events', async () => {
     const service = new DefaultCatalogScmEventsService(mockMetrics);
@@ -118,6 +115,7 @@ describe('DefaultCatalogScmEventsService', () => {
 
     service.markEventActionTaken({ action: 'refresh' });
 
-    expect(counterAdd).toHaveBeenCalledWith(1, { action: 'refresh' });
+    const counter = mockMetrics.createCounter.mock.results[0].value;
+    expect(counter.add).toHaveBeenCalledWith(1, { action: 'refresh' });
   });
 });
