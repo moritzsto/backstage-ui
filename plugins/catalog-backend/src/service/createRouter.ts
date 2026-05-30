@@ -19,6 +19,7 @@ import {
   AuthService,
   HttpAuthService,
   LoggerService,
+  PermissionsRegistryService,
   PermissionsService,
 } from '@backstage/backend-plugin-api';
 import {
@@ -38,7 +39,6 @@ import { Cursor, EntitiesCatalog } from '../catalog/types';
 import { CatalogProcessingOrchestrator } from '../processing/types';
 import { validateEntityEnvelope } from '../processing/util';
 import { createOpenApiRouter } from '../schema/openapi';
-import { AuthorizedValidationService } from './AuthorizedValidationService';
 import {
   basicEntityFilter,
   entitiesBatchRequest,
@@ -79,6 +79,7 @@ export interface RouterOptions {
   refreshService?: RefreshService;
   logger: LoggerService;
   config: Config;
+  permissionsRegistry?: PermissionsRegistryService;
   auth: AuthService;
   httpAuth: HttpAuthService;
   permissionsService: PermissionsService;
@@ -92,13 +93,6 @@ export interface RouterOptions {
 export async function createRouter(
   options: RouterOptions,
 ): Promise<express.Router> {
-  const router = await createOpenApiRouter({
-    validatorOptions: {
-      // We want the spec to be up to date with the expected value, but the return type needs
-      //  to be controlled by the router implementation not the request validator.
-      ignorePaths: /^\/validate-entity\/?$/,
-    },
-  });
   const {
     entitiesCatalog,
     locationAnalyzer,
@@ -108,11 +102,30 @@ export async function createRouter(
     config,
     logger,
     permissionsService,
+    permissionsRegistry,
     auth,
     httpAuth,
     auditor,
     enableRelationsCompatibility = false,
   } = options;
+
+  const router = await createOpenApiRouter(
+    {
+      validatorOptions: {
+        // We want the spec to be up to date with the expected value, but the return type needs
+        //  to be controlled by the router implementation not the request validator.
+        ignorePaths: /^\/validate-entity\/?$/,
+      },
+    },
+    permissionsRegistry
+      ? {
+          permissions: permissionsService,
+          permissionsRegistry,
+          httpAuth,
+          logger,
+        }
+      : undefined,
+  );
 
   const readonlyEnabled =
     config.getOptionalBoolean('catalog.readonly') || false;
@@ -928,27 +941,19 @@ export async function createRouter(
         });
       }
 
-      const credentials = await httpAuth.credentials(req);
-      const authorizedValidationService = new AuthorizedValidationService(
-        orchestrator,
-        permissionsService,
-      );
-      const processingResult = await authorizedValidationService.process(
-        {
-          entity: {
-            ...entity,
-            metadata: {
-              ...entity.metadata,
-              annotations: {
-                [ANNOTATION_LOCATION]: body.location,
-                [ANNOTATION_ORIGIN_LOCATION]: body.location,
-                ...entity.metadata.annotations,
-              },
+      const processingResult = await orchestrator.process({
+        entity: {
+          ...entity,
+          metadata: {
+            ...entity.metadata,
+            annotations: {
+              [ANNOTATION_LOCATION]: body.location,
+              [ANNOTATION_ORIGIN_LOCATION]: body.location,
+              ...entity.metadata.annotations,
             },
           },
         },
-        credentials,
-      );
+      });
 
       if (!processingResult.ok) {
         const errors = processingResult.errors.map(e => serializeError(e));

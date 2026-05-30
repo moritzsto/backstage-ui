@@ -852,6 +852,10 @@ export const spec = {
       post: {
         operationId: 'RefreshEntity',
         tags: ['Entity'],
+        'x-backstage-permissions': {
+          permission: 'catalog.entity.refresh',
+          validateManually: true,
+        },
         description: 'Refresh the entity related to entityRef.',
         responses: {
           '200': {
@@ -1069,6 +1073,10 @@ export const spec = {
       get: {
         operationId: 'GetEntityAncestryByName',
         tags: ['Entity'],
+        'x-backstage-permissions': {
+          permission: 'catalog.entity.read',
+          validateManually: true,
+        },
         description: "Get an entity's ancestry by entity ref.",
         responses: {
           '200': {
@@ -1474,6 +1482,9 @@ export const spec = {
       post: {
         operationId: 'CreateLocation',
         tags: ['Locations'],
+        'x-backstage-permissions': {
+          permission: 'catalog.location.create',
+        },
         description: 'Create a location for a given target.',
         responses: {
           '201': {
@@ -1560,6 +1571,12 @@ export const spec = {
       get: {
         operationId: 'GetLocations',
         tags: ['Locations'],
+        'x-backstage-permissions': {
+          permission: 'catalog.location.read',
+          onDeny: {
+            body: [],
+          },
+        },
         description: 'Get all locations',
         responses: {
           '200': {
@@ -1646,6 +1663,12 @@ export const spec = {
     '/locations/{id}': {
       get: {
         operationId: 'GetLocation',
+        'x-backstage-permissions': {
+          permission: 'catalog.location.read',
+          onDeny: {
+            statusCode: 404,
+          },
+        },
         tags: ['Locations'],
         description: 'Get a location by id.',
         responses: {
@@ -1729,6 +1752,9 @@ export const spec = {
       },
       delete: {
         operationId: 'DeleteLocation',
+        'x-backstage-permissions': {
+          permission: 'catalog.location.delete',
+        },
         tags: ['Locations'],
         description: 'Delete a location by id.',
         responses: {
@@ -1765,6 +1791,12 @@ export const spec = {
         operationId: 'getLocationByEntity',
         tags: ['Locations'],
         description: 'Get a location for entity.',
+        'x-backstage-permissions': {
+          permission: 'catalog.location.read',
+          onDeny: {
+            statusCode: 404,
+          },
+        },
         responses: {
           '200': {
             description: 'Ok',
@@ -1818,6 +1850,9 @@ export const spec = {
       post: {
         operationId: 'AnalyzeLocation',
         tags: ['Locations'],
+        'x-backstage-permissions': {
+          permission: 'catalog.location.analyze',
+        },
         description: 'Validate a given location.',
         responses: {
           '200': {
@@ -1869,6 +1904,9 @@ export const spec = {
       post: {
         operationId: 'ValidateEntity',
         tags: ['Entity'],
+        'x-backstage-permissions': {
+          permission: 'catalog.entity.validate',
+        },
         description:
           'Validate that a passed in entity has no errors in schema.',
         responses: {
@@ -1940,8 +1978,12 @@ export const createOpenApiRouter = async (
   options?: Parameters<
     typeof createValidatedOpenApiRouterFromGeneratedEndpointMap
   >['1'],
+  services?: Parameters<
+    typeof createValidatedOpenApiRouterFromGeneratedEndpointMap
+  >['2'],
 ) =>
   createValidatedOpenApiRouterFromGeneratedEndpointMap<EndpointMap>(
     spec,
     options,
+    services,
   );
