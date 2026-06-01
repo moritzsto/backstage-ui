@@ -104,7 +104,7 @@ export const EntityProvider = (props: EntityProviderProps) => (
  *
  * @public
  */
-export function useEntity<TEntity extends Entity = Entity>(): {
+ export function useEntityOptional<TEntity extends Entity = Entity>(): TEntity | undefined {  
   entity: TEntity;
 } {
   const versionedHolder = useVersionedContext<{ 1: EntityLoadingStatus }>(
@@ -151,4 +151,33 @@ export function useAsyncEntity<
 
   const { entity, loading, error, refresh } = value;
   return { entity: entity as TEntity, loading, error, refresh };
+}
+
+/**
+ * Grab the current entity from the context without throwing.
+ * Returns undefined if the entity context is not available or the entity
+ * has not yet been loaded. Use this hook when a component may render outside
+ * of an EntityLayout, such as in the new frontend system where
+ * EntityContentBlueprint loaders are evaluated outside of EntityProvider
+ * when building sidebar/nav items.
+ *
+ * @public
+ */
+export function useEntityOptional<TEntity extends Entity = Entity>():
+  | TEntity
+  | undefined {
+  const versionedHolder = useVersionedContext<{ 1: EntityLoadingStatus }>(
+    'entity-context',
+  );
+
+  if (!versionedHolder) {
+    return undefined;
+  }
+
+  const value = versionedHolder.atVersion(1);
+  if (!value) {
+    return undefined;
+  }
+
+  return value.entity as TEntity | undefined;
 }
