@@ -20,9 +20,12 @@ import {
   featureFlagsApiRef,
 } from '@backstage/frontend-plugin-api';
 import { FilterPredicate } from '@backstage/filter-predicates';
-import type {
-  EvaluatePermissionRequest,
-  EvaluatePermissionResponse,
+import {
+  AuthorizeResult,
+  type AuthorizeByNamePermissionRequest,
+  type AuthorizePermissionResponse,
+  type EvaluatePermissionRequest,
+  type EvaluatePermissionResponse,
 } from '@backstage/plugin-permission-common';
 import { ForwardedError } from '@backstage/errors';
 
@@ -36,11 +39,17 @@ export const EMPTY_PREDICATE_CONTEXT: ExtensionPredicateContext = {
   permissions: [],
 };
 
-// Minimal local permission API interface to avoid a dependency on @backstage/plugin-permission-react
+// Minimal local permission API interface to avoid a dependency on
+// @backstage/plugin-permission-react. `authorize` is kept on the type as a
+// presence anchor so the registered permission API satisfies the older
+// consumers, while `authorizeByName` is the route this loader actually uses.
 type MinimalPermissionApi = {
   authorize(
     request: EvaluatePermissionRequest,
   ): Promise<EvaluatePermissionResponse>;
+  authorizeByName?: (
+    request: AuthorizeByNamePermissionRequest,
+  ) => Promise<AuthorizePermissionResponse>;
 };
 
 export const localPermissionApiRef = createApiRef<MinimalPermissionApi>({
@@ -62,12 +71,21 @@ export function createPredicateContextLoader(options: {
     );
   }
 
+  function getPermissionApiWithByName() {
+    if (options.predicateReferences.permissions.length === 0) {
+      return undefined;
+    }
+    const permissionApi = options.apis.get(localPermissionApiRef);
+    if (!permissionApi?.authorizeByName) {
+      return undefined;
+    }
+    return permissionApi as MinimalPermissionApi &
+      Required<Pick<MinimalPermissionApi, 'authorizeByName'>>;
+  }
+
   function getImmediate(): ExtensionPredicateContext | undefined {
-    if (options.predicateReferences.permissions.length > 0) {
-      const permissionApi = options.apis.get(localPermissionApiRef);
-      if (permissionApi) {
-        return undefined;
-      }
+    if (getPermissionApiWithByName()) {
+      return undefined;
     }
 
     return {
@@ -77,32 +95,31 @@ export function createPredicateContextLoader(options: {
   }
 
   async function load() {
-    const immediatePredicateContext = getImmediate();
-    if (immediatePredicateContext) {
-      return immediatePredicateContext;
+    const permissionApi = getPermissionApiWithByName();
+    if (!permissionApi) {
+      // No permission API capable of authorizing by name; stay safe by
+      // treating no permissions as allowed rather than fabricating a
+      // basic-permission shape and silently dropping `attributes`.
+      return {
+        featureFlags: getActiveFeatureFlags(),
+        permissions: [],
+      };
     }
 
+    const permissionNames = options.predicateReferences.permissions;
     let allowedPermissions: string[] = [];
-    const permissionApi = options.apis.get(localPermissionApiRef);
-    if (permissionApi) {
-      try {
-        const permissionNames = options.predicateReferences.permissions;
-        const responses = await Promise.all(
-          permissionNames.map(name =>
-            permissionApi.authorize({
-              permission: { name, type: 'basic', attributes: {} },
-            }),
-          ),
-        );
-        allowedPermissions = permissionNames.filter(
-          (_, i) => responses[i].result === 'ALLOW',
-        );
-      } catch (error) {
-        throw new ForwardedError(
-          'Failed to authorize extension permissions',
-          error,
-        );
-      }
+    try {
+      const decisions = await Promise.all(
+        permissionNames.map(name => permissionApi.authorizeByName({ name })),
+      );
+      allowedPermissions = permissionNames.filter(
+        (_, index) => decisions[index]?.result === AuthorizeResult.ALLOW,
+      );
+    } catch (error) {
+      throw new ForwardedError(
+        'Failed to authorize extension permissions',
+        error,
+      );
     }
 
     return {

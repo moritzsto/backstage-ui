@@ -18,6 +18,22 @@ export type AnyOfCriteria<TQuery> = {
 };
 
 // @public
+export type AuthorizeByNamePermissionRequest = {
+  name: string;
+  resourceRef?: string;
+};
+
+// @public
+export type AuthorizeByNameRequest = PermissionMessageBatch<{
+  name: string;
+  resourceRef?: string | string[];
+}>;
+
+// @public
+export type AuthorizeByNameResponse =
+  PermissionMessageBatch<EvaluatePermissionResponse>;
+
+// @public
 export type AuthorizePermissionRequest =
   | {
       permission: Exclude<Permission, ResourcePermission>;
@@ -189,6 +205,10 @@ export class PermissionClient implements PermissionEvaluator {
   constructor(options: { discovery: DiscoveryApi; config: Config });
   authorize(
     requests: AuthorizePermissionRequest[],
+    options?: PermissionClientRequestOptions,
+  ): Promise<AuthorizePermissionResponse[]>;
+  authorizeByName(
+    requests: AuthorizeByNamePermissionRequest[],
     options?: PermissionClientRequestOptions,
   ): Promise<AuthorizePermissionResponse[]>;
   authorizeConditional(

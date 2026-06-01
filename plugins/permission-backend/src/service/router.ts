@@ -20,10 +20,13 @@ import Router from 'express-promise-router';
 import { InputError } from '@backstage/errors';
 import { IdentityApi } from '@backstage/plugin-auth-node';
 import {
+  AuthorizeByNameResponse,
+  AuthorizePermissionResponse,
   AuthorizeResult,
   EvaluatePermissionResponse,
   IdentifiedPermissionMessage,
   isResourcePermission,
+  Permission,
   PermissionAttributes,
   PermissionMessageBatch,
 } from '@backstage/plugin-permission-common';
@@ -47,6 +50,7 @@ import {
   RootConfigService,
   UserInfoService,
 } from '@backstage/backend-plugin-api';
+import { RootPermissionsRegistryService } from '@backstage/backend-plugin-api/alpha';
 
 const attributesSchema: z.ZodSchema<PermissionAttributes> = z.object({
   action: z
@@ -91,6 +95,18 @@ const evaluatePermissionRequestBatchSchema = z.object({
   items: z.array(evaluatePermissionRequestSchema),
 });
 
+const authorizeByNameRequestBatchSchema = z.object({
+  items: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      resourceRef: z
+        .union([z.string(), z.array(z.string()).nonempty()])
+        .optional(),
+    }),
+  ),
+});
+
 /**
  * Options required when constructing a new {@link express#Router} using
  * {@link createRouter}.
@@ -106,10 +122,17 @@ export interface RouterOptions {
   auth: AuthService;
   httpAuth: HttpAuthService;
   userInfo: UserInfoService;
+  permissionsRegistry: RootPermissionsRegistryService;
 }
 
+type ResolvedRequest = {
+  id: string;
+  permission: Permission;
+  resourceRef?: string | string[];
+};
+
 const handleRequest = async (
-  requests: z.infer<typeof evaluatePermissionRequestBatchSchema>['items'],
+  requests: ResolvedRequest[],
   policy: PermissionPolicy,
   permissionIntegrationClient: PermissionIntegrationClient,
   credentials: BackstageCredentials<
@@ -188,8 +211,16 @@ const handleRequest = async (
 export async function createRouter(
   options: RouterOptions,
 ): Promise<express.Router> {
-  const { policy, discovery, config, logger, auth, httpAuth, userInfo } =
-    options;
+  const {
+    policy,
+    discovery,
+    config,
+    logger,
+    auth,
+    httpAuth,
+    userInfo,
+    permissionsRegistry,
+  } = options;
 
   if (!config.getOptionalBoolean('permission.enabled')) {
     logger.warn(
@@ -213,6 +244,114 @@ export async function createRouter(
   router.get('/health', (_, response) => {
     response.json({ status: 'ok' });
   });
+
+  router.post(
+    '/authorize/by-name',
+    async (req: Request, res: Response<AuthorizeByNameResponse>) => {
+      const credentials = await httpAuth.credentials(req, {
+        allow: ['user', 'none'],
+      });
+
+      const parseResult = authorizeByNameRequestBatchSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        throw new InputError(parseResult.error.toString());
+      }
+
+      const items = parseResult.data.items;
+
+      // Hydrate name -> Permission via the root registry. Unknown names short-
+      // circuit to DENY: the by-name route is meant for callers that have a
+      // name but not the full Permission shape (e.g. the frontend predicate
+      // loader); an unknown name almost always means the calling deployment
+      // is missing the plugin that registers it, in which case denying access
+      // is the safer default.
+      const denied: IdentifiedPermissionMessage<AuthorizePermissionResponse>[] =
+        [];
+      const resolved: ResolvedRequest[] = [];
+      for (const item of items) {
+        const permission = permissionsRegistry.getPermission(item.name);
+        if (!permission) {
+          logger.warn(
+            `Permission '${item.name}' is not registered with the root permission registry; denying authorize-by-name request`,
+          );
+          denied.push({ id: item.id, result: AuthorizeResult.DENY });
+          continue;
+        }
+        resolved.push({
+          id: item.id,
+          permission,
+          resourceRef: item.resourceRef,
+        });
+      }
+
+      // The by-name route always returns definitive ALLOW/DENY decisions.
+      // Resource permissions therefore require a resourceRef from all callers
+      // (direct users for enumeration safety, services so that conditional
+      // decisions can be resolved via applyConditions before serialization).
+      if (
+        resolved.some(
+          r =>
+            isResourcePermission(r.permission) && r.resourceRef === undefined,
+        )
+      ) {
+        if (
+          (auth.isPrincipal(credentials, 'none') &&
+            !disabledDefaultAuthPolicy) ||
+          (auth.isPrincipal(credentials, 'user') &&
+            !credentials.principal.actor)
+        ) {
+          throw new InputError(
+            'Resource permissions require a resourceRef to be set. Direct user requests without a resourceRef are not allowed.',
+          );
+        }
+        throw new InputError(
+          'Resource permissions require a resourceRef to be set on the /authorize/by-name endpoint.',
+        );
+      }
+
+      const evaluated = await handleRequest(
+        resolved,
+        policy,
+        permissionIntegrationClient,
+        credentials,
+        auth,
+        userInfo,
+      );
+
+      // Preserve the order of the incoming items so callers can correlate by
+      // index without having to read `id` back.
+      const byId = new Map<
+        string,
+        IdentifiedPermissionMessage<AuthorizePermissionResponse>
+      >();
+      for (const entry of evaluated) {
+        const { id, result } = entry;
+        if (Array.isArray(result)) {
+          throw new Error(
+            `Batched resourceRef results are not supported by the /authorize/by-name endpoint (id ${id}).`,
+          );
+        }
+        if (result === AuthorizeResult.CONDITIONAL) {
+          throw new Error(
+            `Permission policy returned a conditional decision for ${id} on the /authorize/by-name endpoint, which only supports definitive decisions.`,
+          );
+        }
+        byId.set(id, { id, result });
+      }
+      for (const entry of denied) {
+        byId.set(entry.id, entry);
+      }
+      res.json({
+        items: items.map(
+          item =>
+            byId.get(item.id) ?? {
+              id: item.id,
+              result: AuthorizeResult.DENY,
+            },
+        ),
+      });
+    },
+  );
 
   router.post(
     '/authorize',

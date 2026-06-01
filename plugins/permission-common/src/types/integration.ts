@@ -15,6 +15,7 @@
  */
 
 import zodToJsonSchema from 'zod-to-json-schema';
+import { AuthorizePermissionResponse, PermissionMessageBatch } from './api';
 import { Permission } from './permission';
 
 /**
@@ -40,3 +41,45 @@ export type MetadataResponse = {
   permissions?: Permission[];
   rules: MetadataResponseSerializedRule[];
 };
+
+/**
+ * Request item used by {@link @backstage/plugin-permission-common#PermissionClient.authorizeByName}.
+ * Identifies a permission by its registered `name`; the backend resolves it
+ * to the full {@link Permission} (preserving `attributes` and the basic /
+ * resource discriminator) before authorizing. `resourceRef` is required for
+ * resource permissions for the same reason as on regular `authorize` calls.
+ *
+ * @public
+ */
+export type AuthorizeByNamePermissionRequest = {
+  name: string;
+  resourceRef?: string;
+};
+
+/**
+ * Request payload for the permission backend's `POST /authorize/by-name`
+ * endpoint. Each item references a registered permission by `name`; the
+ * backend resolves it to the full {@link Permission} (preserving `attributes`
+ * and the basic / resource discriminator) before authorizing. `resourceRef`
+ * is required for resource permissions for the same reason as on
+ * `/authorize`.
+ *
+ * @public
+ */
+export type AuthorizeByNameRequest = PermissionMessageBatch<{
+  name: string;
+  resourceRef?: string | string[];
+}>;
+
+/**
+ * Response payload for the permission backend's `POST /authorize/by-name`
+ * endpoint. Each entry mirrors the `id` of the corresponding request entry.
+ * Unknown permission names resolve to a `DENY` decision. Decisions are
+ * always definitive (`ALLOW` or `DENY`): conditional decisions are rejected
+ * for non-resource permissions, and resolved via `applyConditions` when a
+ * `resourceRef` is present.
+ *
+ * @public
+ */
+export type AuthorizeByNameResponse =
+  PermissionMessageBatch<AuthorizePermissionResponse>;
