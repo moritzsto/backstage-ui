@@ -218,11 +218,11 @@ export class BackendInitializer {
         }
         result.set(name, epImpl);
       } else {
-        const impl = await this.#serviceRegistry.get(
+        const [ok, impl] = await this.#serviceRegistry.get(
           ref as ServiceRef<unknown>,
           pluginId,
         );
-        if (impl) {
+        if (ok) {
           result.set(name, impl);
         } else {
           missingRefs.add(ref);
@@ -299,7 +299,7 @@ export class BackendInitializer {
     // backend instances, each instance will log the error, because we can't
     // determine which instance the error came from.
     if (process.env.NODE_ENV !== 'test') {
-      const rootLogger = await this.#serviceRegistry.get(
+      const [, rootLogger] = await this.#serviceRegistry.get(
         coreServices.rootLogger,
         'root',
       );
@@ -320,11 +320,11 @@ export class BackendInitializer {
     // Initialize all root scoped services
     await this.#serviceRegistry.initializeEagerServicesWithScope('root');
 
-    const rootConfig = await this.#serviceRegistry.get(
+    const [, rootConfig] = await this.#serviceRegistry.get(
       coreServices.rootConfig,
       'root',
     );
-    const rootLogger = await this.#serviceRegistry.get(
+    const [, rootLogger] = await this.#serviceRegistry.get(
       coreServices.rootLogger,
       'root',
     );
@@ -607,7 +607,7 @@ export class BackendInitializer {
       shutdown(): Promise<void>;
     }
   > {
-    const lifecycleService = await this.#serviceRegistry.get(
+    const [, lifecycleService] = await this.#serviceRegistry.get(
       coreServices.rootLifecycle,
       'root',
     );
@@ -629,7 +629,7 @@ export class BackendInitializer {
   ): Promise<
     LifecycleService & { startup(): Promise<void>; shutdown(): Promise<void> }
   > {
-    const lifecycleService = await this.#serviceRegistry.get(
+    const [, lifecycleService] = await this.#serviceRegistry.get(
       coreServices.lifecycle,
       pluginId,
     );
@@ -662,11 +662,11 @@ export class BackendInitializer {
             `Feature loaders can only depend on root scoped services, but '${name}' is scoped to '${ref.scope}'. Offending loader is ${loader.description}`,
           );
         }
-        const impl = await this.#serviceRegistry.get(
+        const [ok, impl] = await this.#serviceRegistry.get(
           ref as ServiceRef<unknown>,
           'root',
         );
-        if (impl) {
+        if (ok) {
           deps.set(name, impl);
         } else {
           missingRefs.add(ref);
