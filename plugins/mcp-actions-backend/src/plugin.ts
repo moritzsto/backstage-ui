@@ -51,6 +51,7 @@ export const mcpPlugin = createBackendPlugin({
         config: coreServices.rootConfig,
         metrics: metricsServiceRef,
         tracing: tracingServiceRef,
+        auditor: coreServices.auditor,
       },
       async init({
         actions,
@@ -62,6 +63,7 @@ export const mcpPlugin = createBackendPlugin({
         config,
         metrics,
         tracing,
+        auditor,
       }) {
         const serverConfigs = parseServerConfigs(config);
         const namespacedToolNames = config.getOptionalBoolean(
@@ -74,6 +76,7 @@ export const mcpPlugin = createBackendPlugin({
         const mcpService = await McpService.create({
           actions,
           metrics,
+          auditor,
           namespacedToolNames,
           tracingService: tracing,
           captureToolPayloads,
@@ -90,6 +93,7 @@ export const mcpPlugin = createBackendPlugin({
               logger,
               metrics,
               tracing,
+              auditor,
               serverConfig,
             });
 
@@ -107,6 +111,7 @@ export const mcpPlugin = createBackendPlugin({
             mcpService,
             httpAuth,
             tracing,
+            auditor,
             serverConfig,
           });
 
@@ -116,6 +121,7 @@ export const mcpPlugin = createBackendPlugin({
             logger,
             metrics,
             tracing,
+            auditor,
             serverConfig,
           });
 

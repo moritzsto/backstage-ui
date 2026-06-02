@@ -17,8 +17,12 @@ import PromiseRouter from 'express-promise-router';
 import { Router } from 'express';
 import { McpService } from '../services/McpService';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
-import { HttpAuthService } from '@backstage/backend-plugin-api';
 import { TracingService } from '@backstage/backend-plugin-api/alpha';
+import {
+  AuditorService,
+  AuditorServiceEvent,
+  HttpAuthService,
+} from '@backstage/backend-plugin-api';
 import { McpServerConfig } from '../config';
 
 /**
@@ -28,34 +32,77 @@ export const createSseRouter = ({
   mcpService,
   httpAuth,
   tracing,
+  auditor,
   serverConfig,
 }: {
   mcpService: McpService;
   httpAuth: HttpAuthService;
   tracing: TracingService;
+  auditor: AuditorService;
   serverConfig?: McpServerConfig;
 }): Router => {
   const router = PromiseRouter();
   const transportsToSessionId = new Map<string, SSEServerTransport>();
 
   router.get('/', async (req, res) => {
-    const server = mcpService.getServer({
-      credentials: await httpAuth.credentials(req),
-      serverConfig,
-    });
+    let connectionEvent: AuditorServiceEvent;
+    try {
+      connectionEvent = await auditor.createEvent({
+        eventId: 'connection',
+        request: req,
+        meta: { transport: 'sse', actionType: 'established' },
+      });
+    } catch {
+      // best-effort
+      connectionEvent = { success: async () => {}, fail: async () => {} };
+    }
 
-    const transport = new SSEServerTransport(
-      `${req.originalUrl}/messages`,
-      res,
-    );
+    try {
+      const server = mcpService.getServer({
+        credentials: await httpAuth.credentials(req),
+        serverConfig,
+        req,
+      });
 
-    transportsToSessionId.set(transport.sessionId, transport);
+      const transport = new SSEServerTransport(
+        `${req.originalUrl}/messages`,
+        res,
+      );
 
-    res.on('close', () => {
-      transportsToSessionId.delete(transport.sessionId);
-    });
+      transportsToSessionId.set(transport.sessionId, transport);
 
-    await server.connect(transport);
+      res.on('close', async () => {
+        transportsToSessionId.delete(transport.sessionId);
+        try {
+          const e = await auditor.createEvent({
+            eventId: 'connection',
+            request: req,
+            meta: { transport: 'sse', actionType: 'closed' },
+          });
+          await e.success();
+        } catch {
+          // best-effort
+        }
+      });
+
+      await server.connect(transport);
+      await connectionEvent.success().catch(() => {});
+    } catch (error) {
+      const normalizedError =
+        error instanceof Error
+          ? error
+          : new Error(
+              typeof error === 'string'
+                ? error
+                : 'Unknown error during SSE connection',
+            );
+      try {
+        await connectionEvent.fail({ error: normalizedError });
+      } catch {
+        // best-effort
+      }
+      throw error;
+    }
   });
 
   router.post('/messages', async (req, res) => {
