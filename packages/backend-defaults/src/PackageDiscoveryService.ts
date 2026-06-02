@@ -79,6 +79,35 @@ async function findClosestPackageDir(
 }
 
 /** @internal */
+export const patternToRegex = (pattern: string): RegExp => {
+  // Escape regex special characters, then replace escaped '*' with '.*' to allow wildcard matching.
+  const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`^${escaped.replace(/\\\*/g, '.*')}$`);
+};
+
+/** @internal */
+const createRegexMatcher = (pattern: string) => {
+  const re = patternToRegex(pattern);
+  return (name: string) => re.test(name);
+};
+
+/** @internal */
+export const filtersToMatchers = (filters: string[] | undefined) => {
+  if (filters === undefined) {
+    return undefined;
+  }
+
+  // Convert each unique filter into a matcher function.
+  // If the filter contains a wildcard, convert it to a regex matcher.
+  // Otherwise, convert it to an exact string matcher.
+  return [...new Set(filters)].map(filter =>
+    filter.includes('*')
+      ? createRegexMatcher(filter)
+      : (name: string) => name === filter,
+  );
+};
+
+/** @internal */
 export class PackageDiscoveryService {
   private readonly config: RootConfigService;
   private readonly logger: RootLoggerService;
@@ -98,18 +127,22 @@ export class PackageDiscoveryService {
       return dependencyNames;
     }
 
-    const includedPackagesConfig = this.config.getOptionalStringArray(
-      'backend.packages.include',
-    );
+    // If no include filters are specified, we include all by default.
+    // If include filters are specified, we only include those that match at least one filter.
+    const includeMatchers = filtersToMatchers(
+      this.config.getOptionalStringArray('backend.packages.include'),
+    ) ?? [() => true];
 
-    const includedPackages = includedPackagesConfig
-      ? new Set(includedPackagesConfig)
-      : dependencyNames;
-    const excludedPackagesSet = new Set(
+    // If no exclude filters are specified, we exclude none by default.
+    const excludeMatchers = filtersToMatchers(
       this.config.getOptionalStringArray('backend.packages.exclude'),
-    );
+    ) ?? [() => false];
 
-    return [...includedPackages].filter(name => !excludedPackagesSet.has(name));
+    return dependencyNames.filter(
+      name =>
+        includeMatchers.some(match => match(name)) &&
+        !excludeMatchers.some(match => match(name)),
+    );
   }
 
   async getBackendFeatures(): Promise<{ features: Array<BackendFeature> }> {
