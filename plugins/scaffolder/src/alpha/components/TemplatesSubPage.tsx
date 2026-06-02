@@ -41,6 +41,7 @@ import { createGroupsWithOther } from '../lib/createGroupsWithOther';
 import {
   FieldExtensionOptions,
   FormProps,
+  LayoutOptions,
   SecretsContextProvider,
   TemplateGroupFilter,
   useCustomFieldExtensions,
@@ -179,6 +180,7 @@ export function TemplatesSubPage(props: {
   formFields?: Array<FormField>;
   formProps?: FormProps;
   groups?: TemplateGroupFilter[];
+  layouts?: LayoutOptions[];
 }) {
   const customFieldExtensions = useCustomFieldExtensions(undefined);
   const customLayouts = useCustomLayouts(undefined);
@@ -195,6 +197,17 @@ export function TemplatesSubPage(props: {
     ),
   ] as FieldExtensionOptions[];
 
+  const mergedLayouts = useMemo(() => {
+    const layoutsByName = new Map<string, LayoutOptions>();
+    for (const layout of customLayouts) {
+      layoutsByName.set(layout.name, layout);
+    }
+    for (const layout of props.layouts ?? []) {
+      layoutsByName.set(layout.name, layout);
+    }
+    return Array.from(layoutsByName.values());
+  }, [customLayouts, props.layouts]);
+
   return (
     <Routes>
       <Route index element={<TemplateListContent groups={props.groups} />} />
@@ -204,7 +217,7 @@ export function TemplatesSubPage(props: {
           <SecretsContextProvider>
             <TemplateWizardPageContent
               customFieldExtensions={fieldExtensions}
-              layouts={customLayouts}
+              layouts={mergedLayouts}
               formProps={props.formProps}
             />
           </SecretsContextProvider>
