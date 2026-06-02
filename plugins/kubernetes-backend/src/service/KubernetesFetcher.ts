@@ -21,6 +21,7 @@ import {
   ObjectFetchParams,
   ObjectToFetch,
 } from '@backstage/plugin-kubernetes-node';
+import split2 from 'split2';
 import {
   ANNOTATION_KUBERNETES_AUTH_PROVIDER,
   SERVICEACCOUNT_CA_PATH,
@@ -28,6 +29,8 @@ import {
   KubernetesErrorTypes,
   KubernetesFetchError,
   PodStatusFetchResponse,
+  KubernetesWatchEvent,
+  KubernetesWatchOptions,
 } from '@backstage/plugin-kubernetes-common';
 import fetch, { RequestInit, Response } from 'node-fetch';
 import * as https from 'node:https';
@@ -176,6 +179,169 @@ export class KubernetesClientBasedFetcher implements KubernetesFetcher {
       return this.handleUnsuccessfulResponse(clusterDetails.name, podList);
     }
     return this.handleUnsuccessfulResponse(clusterDetails.name, podMetrics);
+  }
+
+  /**
+   * {@inheritDoc @backstage/plugin-kubernetes-node#KubernetesFetcher.watchResource}
+   *
+   * Note: `async *` declares an async generator — a function that can both
+   * `await` promises and `yield` values incrementally. This is what enables
+   * `for await (const event of fetcher.watchResource(...))` consumption.
+   */
+  async *watchResource(
+    clusterDetails: ClusterDetails,
+    credential: KubernetesCredential,
+    group: string,
+    apiVersion: string,
+    plural: string,
+    options?: KubernetesWatchOptions,
+  ): AsyncGenerator<KubernetesWatchEvent, void, undefined> {
+    const {
+      namespace,
+      labelSelector,
+      resourceVersion,
+      timeoutSeconds,
+      allowWatchBookmarks,
+      sendInitialEvents,
+      resourceVersionMatch,
+    } = options || {};
+
+    // Build resource path
+    const encode = (s: string) => encodeURIComponent(s);
+    let resourcePath = group
+      ? `/apis/${encode(group)}/${encode(apiVersion)}`
+      : `/api/${encode(apiVersion)}`;
+    if (namespace) {
+      resourcePath += `/namespaces/${encode(namespace)}`;
+    }
+    resourcePath += `/${encode(plural)}`;
+
+    // Get auth setup
+    let url: URL;
+    let requestInit: RequestInit;
+    const authProvider =
+      clusterDetails.authMetadata[ANNOTATION_KUBERNETES_AUTH_PROVIDER];
+
+    if (this.isServiceAccountAuthentication(authProvider, clusterDetails)) {
+      [url, requestInit] = await this.fetchArgsInCluster(credential);
+    } else if (!this.isCredentialMissing(authProvider, credential)) {
+      [url, requestInit] = await this.fetchArgs(clusterDetails, credential);
+    } else {
+      yield {
+        type: 'ERROR',
+        error: {
+          errorType: 'UNAUTHORIZED_ERROR',
+          statusCode: 401,
+          resourcePath,
+        },
+      };
+      return;
+    }
+
+    // Set path and query params
+    if (url.pathname === '/') {
+      url.pathname = resourcePath;
+    } else {
+      url.pathname += resourcePath;
+    }
+
+    const queryParams: Record<string, string> = { watch: 'true' };
+    if (labelSelector) queryParams.labelSelector = labelSelector;
+    if (resourceVersion) queryParams.resourceVersion = resourceVersion;
+    if (timeoutSeconds) queryParams.timeoutSeconds = timeoutSeconds.toString();
+    if (allowWatchBookmarks) queryParams.allowWatchBookmarks = 'true';
+    if (sendInitialEvents) queryParams.sendInitialEvents = 'true';
+    if (resourceVersionMatch)
+      queryParams.resourceVersionMatch = resourceVersionMatch;
+
+    url.search = new URLSearchParams(queryParams).toString();
+
+    // Make request
+    let response;
+    try {
+      response = await fetch(url, requestInit);
+    } catch (err) {
+      this.logger.warn(
+        `Network error watching "${resourcePath}" from cluster "${clusterDetails.name}": ${err}`,
+      );
+      yield {
+        type: 'ERROR',
+        error: {
+          errorType: 'SYSTEM_ERROR',
+          statusCode: 0,
+          resourcePath,
+        },
+      };
+      return;
+    }
+
+    if (!response.ok) {
+      yield {
+        type: 'ERROR',
+        error: await this.handleUnsuccessfulResponse(
+          clusterDetails.name,
+          response,
+        ),
+      };
+      return;
+    }
+
+    // Stream events
+    if (!response.body) {
+      yield {
+        type: 'ERROR',
+        error: {
+          errorType: 'SYSTEM_ERROR',
+          statusCode: response.status,
+          resourcePath,
+        },
+      };
+      return;
+    }
+    const stream = response.body.pipe(split2());
+
+    try {
+      for await (const line of stream) {
+        if (!line) continue;
+
+        let data;
+        try {
+          data = JSON.parse(line);
+        } catch (err) {
+          this.logger.warn(`Failed to parse watch event: ${err}`);
+          continue;
+        }
+
+        yield this.transformWatchEvent(data, resourcePath);
+      }
+    } finally {
+      stream.destroy();
+      if (response.body && 'destroy' in response.body) {
+        (response.body as any).destroy();
+      }
+    }
+  }
+
+  private transformWatchEvent(
+    data: any,
+    resourcePath: string,
+  ): KubernetesWatchEvent {
+    if (data.type === 'ERROR') {
+      return {
+        type: 'ERROR',
+        error: {
+          errorType: statusCodeToErrorType(data.object?.code || 500),
+          statusCode: data.object?.code || 500,
+          resourcePath,
+        },
+      };
+    }
+
+    return {
+      type: data.type,
+      object: data.object,
+      resourceVersion: data.object?.metadata?.resourceVersion,
+    };
   }
 
   private async handleUnsuccessfulResponse(

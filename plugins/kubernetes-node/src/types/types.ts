@@ -21,6 +21,8 @@ import {
   KubernetesFetchError,
   KubernetesRequestAuth,
   ObjectsByEntityResponse,
+  KubernetesWatchEvent,
+  KubernetesWatchOptions,
 } from '@backstage/plugin-kubernetes-common';
 import { JsonObject } from '@backstage/types';
 
@@ -250,6 +252,33 @@ export interface KubernetesFetcher {
     namespaces: Set<string>,
     labelSelector?: string,
   ): Promise<FetchResponseWrapper>;
+  /**
+   * Watch Kubernetes resources for changes.
+   *
+   * Returns an AsyncGenerator whose three type parameters are:
+   *   - Yield (`KubernetesWatchEvent`): each `yield` produces a watch event.
+   *     Errors are yielded as `{ type: 'ERROR', error }` (errors-as-data),
+   *     not thrown, so consumers handle them in the same `for await` loop.
+   *   - Return (`void`): the generator never produces a meaningful completion
+   *     value — it ends with bare `return` or by exhausting the stream.
+   *   - Next (`undefined`): the consumer cannot send values into the generator
+   *     via `.next(value)`; this is a produce-only stream.
+   *
+   * @param clusterDetails - Cluster connection details
+   * @param credential - Authentication credentials
+   * @param group - API group (empty string for core resources)
+   * @param apiVersion - API version (e.g., 'v1', 'v1beta1')
+   * @param plural - Resource plural name (e.g., 'pods', 'deployments')
+   * @param options - Optional watch parameters
+   */
+  watchResource(
+    clusterDetails: ClusterDetails,
+    credential: KubernetesCredential,
+    group: string,
+    apiVersion: string,
+    plural: string,
+    options?: KubernetesWatchOptions,
+  ): AsyncGenerator<KubernetesWatchEvent, void, undefined>;
 }
 /**
  * @public
