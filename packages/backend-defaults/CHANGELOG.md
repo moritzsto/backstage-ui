@@ -1,5 +1,14 @@
 # @backstage/backend-defaults
 
+## 0.17.3-next.1
+
+### Patch Changes
+
+- b75158b: Adapted Azure-related tests for the Azure SDK upgrade to ESM-style exports. The `AzureBlobStorageUrlReader` now accepts an optional `createContainerClient` dependency for testability without needing to mock the `@azure/storage-blob` module.
+- 34f21c3: Fix gitlabUrlReader issue with retrieving the repository archive tree
+- Updated dependencies
+  - @backstage/integration@2.0.3-next.1
+
 ## 0.17.2-next.0
 
 ### Patch Changes

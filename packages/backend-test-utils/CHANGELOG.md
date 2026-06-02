@@ -1,5 +1,13 @@
 # @backstage/backend-test-utils
 
+## 1.11.4-next.1
+
+### Patch Changes
+
+- 2d181c0: Increased MySQL connection and pool timeouts to reduce flaky `connect ETIMEDOUT` failures in CI. The test MySQL container now also uses `mysql_native_password` for cheaper connection handshakes and disables binary logging.
+- Updated dependencies
+  - @backstage/backend-defaults@0.17.3-next.1
+
 ## 1.11.4-next.0
 
 ### Patch Changes
