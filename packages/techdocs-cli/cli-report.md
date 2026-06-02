@@ -31,6 +31,7 @@ Options:
   --docker-image <DOCKER_IMAGE>
   --etag <ETAG>
   --legacyCopyReadmeMdToIndexMd
+  --mkdocs-parameter-strict
   --no-docker
   --no-pull
   --omitTechdocsCoreMkdocsPlugin

@@ -104,6 +104,7 @@ export class TechdocsGenerator implements GeneratorBase {
       logStream,
       siteOptions,
       runAsDefaultUser,
+      mkdocsParameterStrict,
     } = options;
 
     // Do some updates to mkdocs.yml before generating docs e.g. adding repo_url
@@ -162,12 +163,14 @@ export class TechdocsGenerator implements GeneratorBase {
       [outputDir]: '/output',
     };
 
+    const mkdocsBuildArgs = mkdocsParameterStrict ? ['--strict'] : [];
+
     try {
       switch (this.options.runIn) {
         case 'local':
           await runCommand({
             command: 'mkdocs',
-            args: ['build', '-d', outputDir, '-v'],
+            args: ['build', '-d', outputDir, '-v', ...mkdocsBuildArgs],
             options: {
               cwd: inputDir,
             },
@@ -183,7 +186,7 @@ export class TechdocsGenerator implements GeneratorBase {
           await containerRunner.runContainer({
             imageName:
               this.options.dockerImage ?? TechdocsGenerator.defaultDockerImage,
-            args: ['build', '-d', '/output'],
+            args: ['build', '-d', '/output', ...mkdocsBuildArgs],
             logStream,
             mountDirs,
             workingDir: '/input',
