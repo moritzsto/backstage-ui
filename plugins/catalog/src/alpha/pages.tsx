@@ -28,12 +28,14 @@ import {
   entityRouteRef,
 } from '@backstage/plugin-catalog-react';
 import {
+  CatalogFilterBlueprint,
   defaultEntityContentGroupDefinitions,
   EntityContentBlueprint,
   EntityContextMenuItemBlueprint,
   EntityHeaderBlueprint,
   EntityContentGroupDefinitions,
 } from '@backstage/plugin-catalog-react/alpha';
+import { Fragment } from 'react';
 import CategoryIcon from '@material-ui/icons/Category';
 import { rootRouteRef } from '../routes';
 import { useEntityFromUrl } from '../components/CatalogEntityPage/useEntityFromUrl';
@@ -69,7 +71,10 @@ export const CatalogExportConfigBlueprint = createExtensionBlueprint({
 
 export const catalogPage = PageBlueprint.makeWithOverrides({
   inputs: {
-    filters: createExtensionInput([coreExtensionData.reactElement]),
+    filters: createExtensionInput([
+      CatalogFilterBlueprint.dataRefs.filterDescriptor.optional(),
+      coreExtensionData.reactElement.optional(),
+    ]),
     exportConfig: createExtensionInput([catalogExportConfigDataRef.optional()]),
   },
   configSchema: {
@@ -105,9 +110,51 @@ export const catalogPage = PageBlueprint.makeWithOverrides({
         const { NfsDefaultCatalogPage } = await import(
           '../components/CatalogPage/DefaultCatalogPage'
         );
-        const filters = inputs.filters.map(filter =>
-          filter.get(coreExtensionData.reactElement),
+        const { FacetFilterPicker } = await import(
+          './components/FacetFilterPicker'
         );
+        const { OptionsFilterPicker } = await import(
+          './components/OptionsFilterPicker'
+        );
+
+        let keyCounter = 0;
+        const filterElements = inputs.filters.map(filter => {
+          const descriptor = filter.get(
+            CatalogFilterBlueprint.dataRefs.filterDescriptor,
+          );
+          if (descriptor) {
+            switch (descriptor.type) {
+              case 'options':
+                return (
+                  <OptionsFilterPicker
+                    key={descriptor.filterKey}
+                    {...descriptor}
+                  />
+                );
+              case 'facet':
+                return (
+                  <FacetFilterPicker
+                    key={descriptor.filterKey}
+                    {...descriptor}
+                  />
+                );
+              case 'custom':
+              default:
+                return (
+                  <Fragment key={`custom-${keyCounter++}`}>
+                    {descriptor.element}
+                  </Fragment>
+                );
+            }
+          }
+          const element = filter.get(coreExtensionData.reactElement);
+          if (element) {
+            return (
+              <Fragment key={`legacy-${keyCounter++}`}>{element}</Fragment>
+            );
+          }
+          return null;
+        });
 
         // Merge export customizers from all attached extensions
         const mergedExportSettings: CatalogExportSettings = {
@@ -137,7 +184,7 @@ export const catalogPage = PageBlueprint.makeWithOverrides({
 
         return (
           <NfsDefaultCatalogPage
-            filters={<>{filters}</>}
+            filters={<>{filterElements}</>}
             pagination={config.pagination}
             exportSettings={
               mergedExportSettings.enabled ? mergedExportSettings : undefined
