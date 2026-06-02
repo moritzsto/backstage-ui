@@ -7963,11 +7963,11 @@ __metadata:
   linkType: hard
 
 "@codemirror/legacy-modes@npm:^6.1.0":
-  version: 6.5.2
-  resolution: "@codemirror/legacy-modes@npm:6.5.2"
+  version: 6.5.3
+  resolution: "@codemirror/legacy-modes@npm:6.5.3"
   dependencies:
     "@codemirror/language": "npm:^6.0.0"
-  checksum: 10/b10c6e876f9cac4946c3a4ab0a49a637a08fc2c39a06392261a652c6a68f654e4525d472b649bf171426e916920ef68ec0e5fb81c2bc244ce5143a915fce0338
+  checksum: 10/dfd19650a4bb41e082c27ffb3166bf3cc9e2a1216cbf676fe0a49f7bdd068589108681e0a9a827897425d27f694488b6094c52eed9fe111b59e496387bf07b8d
   languageName: node
   linkType: hard
 
@@ -8015,14 +8015,14 @@ __metadata:
   linkType: hard
 
 "@codemirror/view@npm:^6.0.0, @codemirror/view@npm:^6.23.0":
-  version: 6.41.1
-  resolution: "@codemirror/view@npm:6.41.1"
+  version: 6.43.0
+  resolution: "@codemirror/view@npm:6.43.0"
   dependencies:
     "@codemirror/state": "npm:^6.6.0"
     crelt: "npm:^1.0.6"
     style-mod: "npm:^4.1.0"
     w3c-keyname: "npm:^2.2.4"
-  checksum: 10/ab8156db1012f94ac39d603da4c397ab1de8877f941d0cf67f79cd09fffe9f39d5de8a10611a788ce9d5a88cad2633445880955fd0dc1ad67813cbf9be97774a
+  checksum: 10/7cfeebe1507f71a960dfb2d5152400507d28ed5827680bc73e0a093bfba9a796c2e559c960fd2b046379fac31ff0b59663dfc481baadf1d6ececd71eb5b48014
   languageName: node
   linkType: hard
 
