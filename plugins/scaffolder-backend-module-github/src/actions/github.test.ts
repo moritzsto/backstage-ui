@@ -13,6 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+jest.mock('node:fs', () => {
+  const actual = jest.requireActual('node:fs');
+  return {
+    ...actual,
+    promises: {
+      ...actual.promises,
+      readdir: jest.fn().mockResolvedValue([]),
+      readFile: jest.fn().mockResolvedValue(Buffer.from('test content')),
+    },
+  };
+});
+
 jest.mock('./gitHelpers', () => {
   return {
     ...jest.requireActual('./gitHelpers'),
@@ -54,6 +66,7 @@ const initRepoAndPushMocked = initRepoAndPush as jest.Mock<
   Promise<{ commitHash: string }>
 >;
 
+import { promises as fsPromises } from 'node:fs';
 import { Octokit } from 'octokit';
 
 const octokitMock = Octokit as unknown as jest.Mock;
@@ -67,6 +80,7 @@ const mockOctokit = {
       createInOrg: jest.fn(),
       createForAuthenticatedUser: jest.fn(),
       replaceAllTopics: jest.fn(),
+      createOrUpdateFileContents: jest.fn(),
     },
     teams: {
       getByName: jest.fn(),
@@ -80,8 +94,12 @@ const mockOctokit = {
     activity: {
       setRepoSubscription: jest.fn(),
     },
+    git: {
+      getRef: jest.fn(),
+    },
   },
   request: jest.fn(),
+  graphql: jest.fn(),
 };
 jest.mock('octokit', () => ({
   Octokit: jest.fn(),
@@ -1878,5 +1896,194 @@ describe('publish:github', () => {
       subscribed: true,
       ignored: false,
     });
+  });
+
+  it('should fall back to GraphQL API when git push fails with ECONNRESET', async () => {
+    const econnError = new Error('socket hang up');
+    (econnError as NodeJS.ErrnoException).code = 'ECONNRESET';
+    initRepoAndPushMocked.mockRejectedValue(econnError);
+
+    mockOctokit.rest.users.getByUsername.mockResolvedValue({
+      data: { type: 'User' },
+    });
+    mockOctokit.rest.repos.createForAuthenticatedUser.mockResolvedValue({
+      data: {
+        clone_url: 'https://github.com/clone/url.git',
+        html_url: 'https://github.com/html/url',
+      },
+    });
+
+    (fsPromises.readdir as jest.Mock).mockResolvedValue([
+      { name: 'README.md', isDirectory: () => false },
+      { name: 'index.ts', isDirectory: () => false },
+    ]);
+    (fsPromises.readFile as jest.Mock).mockResolvedValue(
+      Buffer.from('file content'),
+    );
+
+    mockOctokit.rest.git.getRef.mockResolvedValue({
+      data: { object: { sha: 'head-sha' } },
+    });
+    mockOctokit.graphql.mockResolvedValue({
+      createCommitOnBranch: { commit: { oid: 'new-commit-sha' } },
+    });
+
+    await action.handler({
+      ...mockContext,
+      input: { ...mockContext.input, protectDefaultBranch: false },
+    });
+
+    expect(initRepoAndPush).toHaveBeenCalled();
+    expect(mockOctokit.graphql).toHaveBeenCalledWith(
+      expect.stringContaining('createCommitOnBranch'),
+      expect.objectContaining({
+        input: expect.objectContaining({
+          branch: {
+            repositoryNameWithOwner: 'owner/repo',
+            branchName: 'main',
+          },
+          expectedHeadOid: 'head-sha',
+          fileChanges: {
+            additions: expect.arrayContaining([
+              expect.objectContaining({ path: 'README.md' }),
+              expect.objectContaining({ path: 'index.ts' }),
+            ]),
+          },
+        }),
+      }),
+    );
+    expect(mockContext.output).toHaveBeenCalledWith(
+      'commitHash',
+      'new-commit-sha',
+    );
+  });
+
+  it('should initialize empty repo via Contents API in fallback', async () => {
+    const econnError = new Error('socket hang up');
+    (econnError as NodeJS.ErrnoException).code = 'ECONNRESET';
+    initRepoAndPushMocked.mockRejectedValue(econnError);
+
+    mockOctokit.rest.users.getByUsername.mockResolvedValue({
+      data: { type: 'User' },
+    });
+    mockOctokit.rest.repos.createForAuthenticatedUser.mockResolvedValue({
+      data: {
+        clone_url: 'https://github.com/clone/url.git',
+        html_url: 'https://github.com/html/url',
+      },
+    });
+
+    (fsPromises.readdir as jest.Mock).mockResolvedValue([
+      { name: 'README.md', isDirectory: () => false },
+    ]);
+    (fsPromises.readFile as jest.Mock).mockResolvedValue(
+      Buffer.from('content'),
+    );
+
+    const notFoundError = Object.assign(new Error('Not Found'), {
+      status: 404,
+    });
+    mockOctokit.rest.git.getRef.mockRejectedValue(notFoundError);
+    mockOctokit.rest.repos.createOrUpdateFileContents.mockResolvedValue({
+      data: { commit: { sha: 'init-sha' } },
+    });
+    mockOctokit.graphql.mockResolvedValue({
+      createCommitOnBranch: { commit: { oid: 'new-commit-sha' } },
+    });
+
+    await action.handler({
+      ...mockContext,
+      input: { ...mockContext.input, protectDefaultBranch: false },
+    });
+
+    expect(
+      mockOctokit.rest.repos.createOrUpdateFileContents,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        owner: 'owner',
+        repo: 'repo',
+        path: '.gitkeep',
+      }),
+    );
+    expect(mockOctokit.graphql).toHaveBeenCalledWith(
+      expect.stringContaining('createCommitOnBranch'),
+      expect.objectContaining({
+        input: expect.objectContaining({
+          expectedHeadOid: 'init-sha',
+          fileChanges: expect.objectContaining({
+            deletions: [{ path: '.gitkeep' }],
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('should fall back to GraphQL API when error.cause.code is ECONNRESET', async () => {
+    const wrappedError = new Error('request failed');
+    (wrappedError as any).cause = Object.assign(new Error('socket hang up'), {
+      code: 'ECONNRESET',
+    });
+    initRepoAndPushMocked.mockRejectedValue(wrappedError);
+
+    mockOctokit.rest.users.getByUsername.mockResolvedValue({
+      data: { type: 'User' },
+    });
+    mockOctokit.rest.repos.createForAuthenticatedUser.mockResolvedValue({
+      data: {
+        clone_url: 'https://github.com/clone/url.git',
+        html_url: 'https://github.com/html/url',
+      },
+    });
+
+    (fsPromises.readdir as jest.Mock).mockResolvedValue([
+      { name: 'README.md', isDirectory: () => false },
+    ]);
+    (fsPromises.readFile as jest.Mock).mockResolvedValue(
+      Buffer.from('content'),
+    );
+
+    mockOctokit.rest.git.getRef.mockResolvedValue({
+      data: { object: { sha: 'head-sha' } },
+    });
+    mockOctokit.graphql.mockResolvedValue({
+      createCommitOnBranch: { commit: { oid: 'cause-commit-sha' } },
+    });
+
+    await action.handler({
+      ...mockContext,
+      input: { ...mockContext.input, protectDefaultBranch: false },
+    });
+
+    expect(initRepoAndPush).toHaveBeenCalled();
+    expect(mockOctokit.graphql).toHaveBeenCalledWith(
+      expect.stringContaining('createCommitOnBranch'),
+      expect.anything(),
+    );
+    expect(mockContext.output).toHaveBeenCalledWith(
+      'commitHash',
+      'cause-commit-sha',
+    );
+  });
+
+  it('should rethrow non-ECONNRESET errors from git push', async () => {
+    const authError = new Error('Authentication failed');
+    (authError as NodeJS.ErrnoException).code = 'AuthError';
+    initRepoAndPushMocked.mockRejectedValue(authError);
+
+    mockOctokit.rest.users.getByUsername.mockResolvedValue({
+      data: { type: 'User' },
+    });
+    mockOctokit.rest.repos.createForAuthenticatedUser.mockResolvedValue({
+      data: {
+        clone_url: 'https://github.com/clone/url.git',
+        html_url: 'https://github.com/html/url',
+      },
+    });
+
+    await expect(action.handler(mockContext)).rejects.toThrow(
+      'Authentication failed',
+    );
+
+    expect(mockOctokit.graphql).not.toHaveBeenCalled();
   });
 });
