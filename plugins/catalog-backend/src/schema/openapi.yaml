@@ -946,8 +946,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Entity'
-        '400':
-          $ref: '#/components/responses/ErrorResponse'
         default:
           $ref: '#/components/responses/ErrorResponse'
       security:
@@ -955,6 +953,11 @@ paths:
         - JWT: []
       parameters:
         - $ref: '#/components/parameters/uid'
+        - name: includeDeleted
+          in: query
+          required: true
+          schema:
+            type: boolean
     delete:
       operationId: DeleteEntityByUid
       tags:
@@ -985,30 +988,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Entity'
-        '400':
-          $ref: '#/components/responses/ErrorResponse'
-        default:
-          $ref: '#/components/responses/ErrorResponse'
-      security:
-        - {}
-        - JWT: []
-      parameters:
-        - $ref: '#/components/parameters/kind'
-        - $ref: '#/components/parameters/namespace'
-        - $ref: '#/components/parameters/name'
-  /entities/by-name/{kind}/{namespace}/{name}/ancestry:
-    get:
-      operationId: GetEntityAncestryByName
-      tags:
-        - Entity
-      description: Get an entity's ancestry by entity ref.
-      responses:
-        '200':
-          description: Ok
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EntityAncestryResponse'
         '400':
           $ref: '#/components/responses/ErrorResponse'
         default:
