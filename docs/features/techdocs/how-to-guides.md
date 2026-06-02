@@ -861,3 +861,60 @@ downloaded:
 ```
 [Link text](https://example.com/foo.jpg){: download="foo.jpg" }
 ```
+
+## How to restrict access to TechDocs using permissions
+
+By default, TechDocs serves documentation to anyone who can view the entity in the catalog. However, you may want to restrict access to documentation independently from catalog visibility — for example, to protect sensitive security runbooks or internal architecture documents.
+
+TechDocs supports the Backstage permission framework through the `techdocs.entity.read` permission. When permissions are enabled, all TechDocs endpoints check this permission before serving content.
+
+### Understanding how TechDocs permissions work
+
+TechDocs uses **two layers of permission checks**:
+
+1. **Catalog entity permission** (`catalog.entity.read`): Before accessing TechDocs, the system first checks if the user can view the entity in the catalog. This happens automatically when loading entity metadata.
+
+2. **TechDocs permission** (`techdocs.entity.read`): After the catalog permission check passes, TechDocs checks this permission to determine if the user can access the documentation specifically.
+
+This means a user must have **both** permissions to access documentation. You can use this to create scenarios where users can see an entity in the catalog (its name, description, owner) but cannot access its documentation.
+
+### Enable permissions
+
+First, ensure the permission framework is enabled in your `app-config.yaml`:
+
+```yaml
+permission:
+  enabled: true
+```
+
+### Write a permission policy
+
+Create or update your permission policy to handle the `techdocs.entity.read` permission. Here's an example that restricts TechDocs access:
+
+```typescript
+import { techDocsEntityReadPermission } from '@backstage/plugin-techdocs-common';
+import {
+  PolicyDecision,
+  AuthorizeResult,
+} from '@backstage/plugin-permission-common';
+import {
+  PermissionPolicy,
+  PolicyQuery,
+} from '@backstage/plugin-permission-node';
+
+class MyPermissionPolicy implements PermissionPolicy {
+  async handle(request: PolicyQuery): Promise<PolicyDecision> {
+    if (request.permission.name === techDocsEntityReadPermission.name) {
+      // Your authorization logic here
+      // For example, check if user is an owner of the entity
+      return { result: AuthorizeResult.CONDITIONAL /* conditions */ };
+    }
+
+    return { result: AuthorizeResult.ALLOW };
+  }
+}
+```
+
+Since `techdocs.entity.read` uses the `catalog-entity` resource type, you can reuse existing catalog permission rules and conditions in your policy.
+
+For more details on writing permission policies, see the [permission documentation](../../permissions/writing-a-policy.md).
