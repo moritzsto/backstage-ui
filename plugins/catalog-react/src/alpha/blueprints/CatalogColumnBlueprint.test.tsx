@@ -1,0 +1,131 @@
+/*
+ * Copyright 2026 The Backstage Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { createExtensionTester } from '@backstage/frontend-test-utils';
+import { CatalogColumnBlueprint } from './CatalogColumnBlueprint';
+import {
+  catalogColumnCellDataRef,
+  catalogColumnHeaderDataRef,
+  entityFilterFunctionDataRef,
+} from './extensionData';
+
+describe('CatalogColumnBlueprint', () => {
+  it('exposes the header descriptor and cell renderer', () => {
+    const cell = jest.fn(() => <span>cell</span>);
+    const ext = CatalogColumnBlueprint.make({
+      name: 'demo',
+      params: {
+        id: 'demo',
+        label: 'Demo',
+        cell,
+        orderField: 'metadata.name',
+        searchFields: ['metadata.name'],
+      },
+    });
+
+    const tester = createExtensionTester(ext);
+
+    expect(tester.get(catalogColumnHeaderDataRef)).toEqual({
+      id: 'demo',
+      label: 'Demo',
+      orderField: 'metadata.name',
+      searchFields: ['metadata.name'],
+    });
+
+    const cellRenderer = tester.get(catalogColumnCellDataRef);
+    expect(typeof cellRenderer).toBe('function');
+  });
+
+  it('omits optional fields from the header when not provided', () => {
+    const ext = CatalogColumnBlueprint.make({
+      name: 'minimal',
+      params: {
+        id: 'minimal',
+        label: 'Minimal',
+        cell: () => <span />,
+      },
+    });
+
+    const tester = createExtensionTester(ext);
+    const header = tester.get(catalogColumnHeaderDataRef);
+    expect(header).toEqual({ id: 'minimal', label: 'Minimal' });
+  });
+
+  it('sets hidden on the header when config.hidden is true', () => {
+    const ext = CatalogColumnBlueprint.make({
+      name: 'hidden',
+      params: {
+        id: 'hidden',
+        label: 'Hidden',
+        cell: () => <span />,
+      },
+    });
+
+    const tester = createExtensionTester(ext, { config: { hidden: true } });
+    const header = tester.get(catalogColumnHeaderDataRef);
+    expect(header?.hidden).toBe(true);
+  });
+
+  it('yields the per-row filter as entityFilterFunctionDataRef', () => {
+    const filter = (e: { kind: string }) => e.kind === 'Component';
+    const ext = CatalogColumnBlueprint.make({
+      name: 'filtered',
+      params: {
+        id: 'filtered',
+        label: 'Filtered',
+        cell: () => <span />,
+        filter,
+      },
+    });
+
+    const tester = createExtensionTester(ext);
+    expect(tester.get(entityFilterFunctionDataRef)).toBe(filter);
+  });
+
+  it('resolves a config filter predicate into entityFilterFunctionDataRef', () => {
+    const ext = CatalogColumnBlueprint.make({
+      name: 'config-filtered',
+      params: {
+        id: 'config-filtered',
+        label: 'Config Filtered',
+        cell: () => <span />,
+      },
+    });
+
+    const tester = createExtensionTester(ext, {
+      config: { filter: { kind: 'Component' } },
+    });
+    const filterFn = tester.get(entityFilterFunctionDataRef);
+    expect(typeof filterFn).toBe('function');
+  });
+
+  it('preserves the optional header render function', () => {
+    const headerFn = () => <span>custom</span>;
+    const ext = CatalogColumnBlueprint.make({
+      name: 'demo',
+      params: {
+        id: 'demo',
+        label: 'Demo',
+        header: headerFn,
+        cell: () => <span />,
+      },
+    });
+
+    const tester = createExtensionTester(ext);
+    const header = tester.get(catalogColumnHeaderDataRef);
+    expect(header?.header).toBe(headerFn);
+  });
+});

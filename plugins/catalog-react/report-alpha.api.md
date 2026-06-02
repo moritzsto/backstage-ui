@@ -5,6 +5,7 @@
 ```ts
 import { AnyRouteRefParams } from '@backstage/frontend-plugin-api';
 import { ColumnConfig } from '@backstage/ui';
+import type { ColumnSize } from '@backstage/ui';
 import { ComponentType } from 'react';
 import { ConfigurableExtensionDataRef } from '@backstage/frontend-plugin-api';
 import { Entity } from '@backstage/catalog-model';
@@ -23,6 +24,105 @@ import { ResourcePermission } from '@backstage/plugin-permission-common';
 import { RouteRef } from '@backstage/frontend-plugin-api';
 import { TableItem } from '@backstage/ui';
 import { TranslationRef } from '@backstage/frontend-plugin-api';
+
+// @alpha
+export const CatalogColumnBlueprint: ExtensionBlueprint<{
+  kind: 'catalog-column';
+  params: {
+    id: string;
+    label: string;
+    cell: (entity: Entity) => ReactElement;
+    header?: () => ReactElement;
+    orderField?: string;
+    searchFields?: string[];
+    filter?: string | FilterPredicate | ((entity: Entity) => boolean);
+    width?: ColumnSize;
+  };
+  output:
+    | ExtensionDataRef<
+        CatalogColumnHeader,
+        'catalog.column-header',
+        {
+          optional: true;
+        }
+      >
+    | ExtensionDataRef<
+        (entity: Entity) => ReactElement,
+        'catalog.column-cell',
+        {
+          optional: true;
+        }
+      >
+    | ExtensionDataRef<
+        (entity: Entity) => boolean,
+        'catalog.entity-filter-function',
+        {
+          optional: true;
+        }
+      >
+    | ExtensionDataRef<
+        string,
+        'catalog.entity-filter-expression',
+        {
+          optional: true;
+        }
+      >;
+  inputs: {};
+  config: {
+    visible: boolean;
+    filter: FilterPredicate | undefined;
+  };
+  configInput: {
+    visible?: boolean | undefined;
+    filter?: FilterPredicate | undefined;
+  };
+  dataRefs: {
+    header: ConfigurableExtensionDataRef<
+      CatalogColumnHeader,
+      'catalog.column-header',
+      {}
+    >;
+    cell: ConfigurableExtensionDataRef<
+      (entity: Entity) => ReactElement,
+      'catalog.column-cell',
+      {}
+    >;
+    filterFunction: ConfigurableExtensionDataRef<
+      (entity: Entity) => boolean,
+      'catalog.entity-filter-function',
+      {}
+    >;
+    filterExpression: ConfigurableExtensionDataRef<
+      string,
+      'catalog.entity-filter-expression',
+      {}
+    >;
+  };
+}>;
+
+// @alpha (undocumented)
+export const catalogColumnCellDataRef: ConfigurableExtensionDataRef<
+  (entity: Entity) => ReactElement,
+  'catalog.column-cell',
+  {}
+>;
+
+// @alpha
+export type CatalogColumnHeader = {
+  id: string;
+  label: string;
+  header?: () => ReactElement;
+  orderField?: string;
+  searchFields?: string[];
+  width?: ColumnSize;
+};
+
+// @alpha (undocumented)
+export const catalogColumnHeaderDataRef: ConfigurableExtensionDataRef<
+  CatalogColumnHeader,
+  'catalog.column-header',
+  {}
+>;
 
 // @alpha
 export const CatalogFilterBlueprint: ExtensionBlueprint<{
@@ -81,20 +181,20 @@ export const catalogReactTranslationRef: TranslationRef<
     readonly 'inspectEntityDialog.overviewPage.metadata.title': 'Metadata';
     readonly 'inspectEntityDialog.overviewPage.labels': 'Labels';
     readonly 'inspectEntityDialog.overviewPage.status.title': 'Status';
-    readonly 'inspectEntityDialog.overviewPage.identity.title': 'Identity';
-    readonly 'inspectEntityDialog.overviewPage.tags': 'Tags';
-    readonly 'inspectEntityDialog.overviewPage.annotations': 'Annotations';
     readonly 'inspectEntityDialog.overviewPage.relation.title': 'Relations';
+    readonly 'inspectEntityDialog.overviewPage.annotations': 'Annotations';
+    readonly 'inspectEntityDialog.overviewPage.tags': 'Tags';
     readonly 'inspectEntityDialog.overviewPage.copyAriaLabel': 'Copy {{label}}';
     readonly 'inspectEntityDialog.overviewPage.copiedStatus': 'Copied';
     readonly 'inspectEntityDialog.overviewPage.helpLinkAriaLabel': 'Learn more';
+    readonly 'inspectEntityDialog.overviewPage.identity.title': 'Identity';
     readonly 'inspectEntityDialog.yamlPage.title': 'Entity as YAML';
     readonly 'inspectEntityDialog.yamlPage.description': 'This is the raw entity data as received from the catalog, on YAML form.';
     readonly 'inspectEntityDialog.tabNames.json': 'Raw JSON';
-    readonly 'inspectEntityDialog.tabNames.yaml': 'Raw YAML';
     readonly 'inspectEntityDialog.tabNames.overview': 'Overview';
     readonly 'inspectEntityDialog.tabNames.ancestry': 'Ancestry';
     readonly 'inspectEntityDialog.tabNames.colocated': 'Colocated';
+    readonly 'inspectEntityDialog.tabNames.yaml': 'Raw YAML';
     readonly 'unregisterEntityDialog.title': 'Are you sure you want to unregister this entity?';
     readonly 'unregisterEntityDialog.cancelButtonTitle': 'Cancel';
     readonly 'unregisterEntityDialog.deleteButtonTitle': 'Delete Entity';
@@ -120,13 +220,13 @@ export const catalogReactTranslationRef: TranslationRef<
     readonly 'entityTableColumnTitle.label': 'Label';
     readonly 'entityTableColumnTitle.title': 'Title';
     readonly 'entityTableColumnTitle.description': 'Description';
+    readonly 'entityTableColumnTitle.domain': 'Domain';
     readonly 'entityTableColumnTitle.system': 'System';
     readonly 'entityTableColumnTitle.namespace': 'Namespace';
-    readonly 'entityTableColumnTitle.tags': 'Tags';
-    readonly 'entityTableColumnTitle.domain': 'Domain';
-    readonly 'entityTableColumnTitle.owner': 'Owner';
     readonly 'entityTableColumnTitle.lifecycle': 'Lifecycle';
+    readonly 'entityTableColumnTitle.owner': 'Owner';
     readonly 'entityTableColumnTitle.targets': 'Targets';
+    readonly 'entityTableColumnTitle.tags': 'Tags';
     readonly 'entityRelationCard.emptyHelpLinkTitle': 'Learn how to change this.';
     readonly 'missingAnnotationEmptyState.title': 'Missing Annotation';
     readonly 'missingAnnotationEmptyState.readMore': 'Read more';
@@ -666,7 +766,6 @@ export const EntityTableColumnTitle: (
   input: EntityTableColumnTitleProps,
 ) =>
   | 'System'
-  | 'Title'
   | 'Domain'
   | 'Lifecycle'
   | 'Namespace'
@@ -676,6 +775,7 @@ export const EntityTableColumnTitle: (
   | 'Name'
   | 'Description'
   | 'Targets'
+  | 'Title'
   | 'Label';
 
 // @alpha (undocumented)

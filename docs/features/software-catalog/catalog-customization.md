@@ -319,6 +319,89 @@ periodically.
 For more details on extension overrides and the different override patterns
 available, see the [extension overrides](../../frontend-system/architecture/25-extension-overrides.md) documentation.
 
+## Catalog index page v2
+
+The catalog index page has an opt-in v2 implementation that uses the `@backstage/ui` table and supports columns contributed by frontend plugins and modules. Enable it through the `page:catalog` extension config:
+
+```yaml title="app-config.yaml"
+app:
+  extensions:
+    - page:catalog:
+        config:
+          version: 'v2'
+```
+
+When v2 is enabled, the catalog plugin registers a set of default columns such as `name`, `owner`, `type`, `lifecycle`, `description`, and `tags`.
+
+### Adding a column
+
+Frontend modules contribute columns by creating an extension with `CatalogColumnBlueprint` from `@backstage/plugin-catalog-react/alpha`:
+
+```tsx title="packages/app/src/catalog/CostColumn.tsx"
+import { CatalogColumnBlueprint } from '@backstage/plugin-catalog-react/alpha';
+import { CellText } from '@backstage/ui';
+
+export const costColumn = CatalogColumnBlueprint.make({
+  name: 'cost',
+  params: {
+    id: 'cost',
+    label: 'Monthly cost',
+    cell: entity => (
+      <CellText
+        title={entity.metadata.annotations?.['cost.io/monthly'] ?? '—'}
+      />
+    ),
+    orderField: 'metadata.annotations.cost.io/monthly',
+    searchFields: ['metadata.annotations.cost.io/monthly'],
+    filter: 'kind:component',
+  },
+});
+```
+
+Then install it as a frontend module:
+
+```tsx title="packages/app/src/catalog/catalogCustomizations.tsx"
+import { createFrontendModule } from '@backstage/frontend-plugin-api';
+import { costColumn } from './CostColumn';
+
+export default createFrontendModule({
+  pluginId: 'catalog',
+  extensions: [costColumn],
+});
+```
+
+Column parameters:
+
+| Parameter      | Description                                                                                                                                                                                                   |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`           | Stable column key (required).                                                                                                                                                                                 |
+| `label`        | Column header text, also used as the accessible name (required).                                                                                                                                              |
+| `cell`         | Render function `(entity) => ReactElement` returning a `<CellText>` or `<CellProfile>` element (required).                                                                                                    |
+| `orderField`   | Catalog field path used for server-side sorting. When set, the column header is clickable.                                                                                                                    |
+| `searchFields` | Catalog field paths included in `fullTextFilter` when the user types in the search box.                                                                                                                       |
+| `filter`       | Per-entity visibility predicate. Accepts a function, a filter predicate object, or a filter expression string. When no displayed entity matches, the entire column is hidden. Can also be set via app-config. |
+| `width`        | Column width — a number (pixels), percentage (`'30%'`), or fraction (`'1fr'`).                                                                                                                                |
+
+### Configuring default columns
+
+Default columns can be disabled, hidden, or filtered through `app-config.yaml`:
+
+```yaml title="app-config.yaml"
+app:
+  extensions:
+    # Remove a column entirely
+    - catalog-column:catalog/tags: false
+    # Keep a column hidden but let its fields contribute to search
+    - catalog-column:catalog/description:
+        config:
+          hidden: true
+    # Show a column only for specific entity kinds
+    - catalog-column:catalog/lifecycle:
+        config:
+          filter:
+            kind: Component
+```
+
 ## Entity page
 
 ### Entity filters
